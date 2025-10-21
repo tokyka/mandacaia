@@ -10,12 +10,12 @@ O motor de regras permite a criação de lógicas de controle personalizadas, co
 
 A arquitetura do projeto é dividida em três componentes principais:
 
-1.  **Simulador de Escravos Modbus (`modbus_slaves.py`):**
+1.  **Simulador de Escravos Modbus (`app/modbus_rtu_slave_v1.py`):**
     *   Simula dispositivos Modbus RTU (reservatórios, motobomba) em um ambiente virtual.
     *   Os valores dos registradores (níveis, tensões, etc.) são atualizados dinamicamente para simular um ambiente real.
     *   Opera em uma porta serial virtual criada com `socat`.
 
-2.  **Controlador Modbus (`app/modbus_master.py`):**
+2.  **Controlador Modbus (`app/modbus_rtu_master_v3.py`):**
     *   Atua como o mestre Modbus RTU, lendo e escrevendo nos registradores dos escravos simulados.
     *   Interage com o banco de dados para buscar configurações e registrar dados operacionais.
     *   **Com a nova funcionalidade**, o controlador também irá:
