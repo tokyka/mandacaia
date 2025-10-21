@@ -26,7 +26,7 @@ from app.models import usuario_model
 from app.models import regra_model
 from app.models import condicao_model
 from app.models import acao_model
-from .views import login_view, acionamentos_view, reservatorio_view, motobomba_view, usuarios_view, nivel_view, index_view, monitoramento_view, modbus_view, grupo_bombeamento_view, funcao_registrador_view, database_view
+from .views import login_view, acionamentos_view, reservatorio_view, motobomba_view, usuarios_view, nivel_view, index_view, monitoramento_view, modbus_view, grupo_bombeamento_view, funcao_registrador_view, database_view, regra_view
 
 # Configuração de logging
 if not app.debug:
