@@ -1,0 +1,247 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+    <style>
+        :root {
+            --primary-blue: #0066cc;
+            --secondary-cyan: #17a2b8;
+            --accent-teal: #20c997;
+        }
+
+        .hero-section {
+            background: linear-gradient(135deg, #e3f2fd 0%, #b3e5fc 50%, #81d4fa 100%);
+            min-height: 20.16vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="%23ffffff" stroke-width="0.5" opacity="0.3"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            opacity: 0.1;
+        }
+
+        .floating-element {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .floating-1 {
+            width: 80px;
+            height: 80px;
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .floating-2 {
+            width: 120px;
+            height: 120px;
+            top: 60%;
+            right: 15%;
+            animation-delay: 2s;
+        }
+
+        .floating-3 {
+            width: 60px;
+            height: 60px;
+            bottom: 30%;
+            left: 70%;
+            animation-delay: 4s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-20px) scale(1.1); }
+        }
+
+        .feature-card {
+            transition: all 0.3s ease;
+            border: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        }
+
+        .feature-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2rem;
+            color: white;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover .feature-icon {
+            transform: scale(1.1);
+        }
+
+        .stats-section {
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-cyan), var(--accent-teal));
+        }
+
+        .stat-number {
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: white;
+        }
+
+        .stat-label {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .brand-title {
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-cyan), var(--accent-teal));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 800;
+        }
+    </style>
+    <!-- Hero Section -->
+    <section class="hero-section d-flex align-items-center position-relative">
+        <!-- Elementos flutuantes animados -->
+        <div class="floating-element floating-1"></div>
+        <div class="floating-element floating-2"></div>
+        <div class="floating-element floating-3"></div>
+
+        <div class="container position-relative">
+            <div class="row justify-content-center text-center">
+                <div class="col-lg-10">
+                    <!-- Ícone e título principal -->
+                    <div class="d-flex align-items-center justify-content-center mb-3">
+                        <i class="bi bi-droplet-fill text-primary me-3" style="font-size: 3rem;"></i>
+                        <h1 class="display-2 brand-title mb-0">Mandacaia</h1>
+                    </div>
+
+                    <!-- Subtítulo de boas-vindas -->
+                    <h2 class="display-6 text-dark mb-3 fw-semibold">
+                        Bem-vindo ao Projeto Mandacaia!
+                    </h2>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Seção de Recursos Principais -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <!-- Cabeçalho da seção -->
+            <div class="row mb-5">
+                <div class="col-12 text-center">
+                    <h3 class="display-5 fw-bold text-dark mb-3">Recursos Principais</h3>
+                </div>
+            </div>
+
+            <!-- Cards de recursos -->
+            <div class="row g-4">
+                <!-- Card Motobombas -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="card feature-card h-100 text-center p-4">
+                        <div class="feature-icon bg-primary">
+                            <i class="bi bi-lightning-charge-fill"></i>
+                        </div>
+                        <h5 class="card-title fw-bold text-dark">Motobombas</h5>
+                        <p class="card-text text-muted">
+                            Controle inteligente e monitoramento em tempo real do funcionamento das motobombas
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Card Reservatórios -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="card feature-card h-100 text-center p-4">
+                        <div class="feature-icon bg-info">
+                            <i class="bi bi-droplet-half"></i>
+                        </div>
+                        <h5 class="card-title fw-bold text-dark">Reservatórios</h5>
+                        <p class="card-text text-muted">
+                            Monitoramento de níveis de água e gestão automatizada dos reservatórios
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Card Monitoramento -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="card feature-card h-100 text-center p-4">
+                        <div class="feature-icon bg-success">
+                            <i class="bi bi-speedometer2"></i>
+                        </div>
+                        <h5 class="card-title fw-bold text-dark">Monitoramento</h5>
+                        <p class="card-text text-muted">
+                            Dashboard completo com métricas em tempo real e alertas inteligentes
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Card Segurança -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="card feature-card h-100 text-center p-4">
+                        <div class="feature-icon bg-warning">
+                            <i class="bi bi-shield-check"></i>
+                        </div>
+                        <h5 class="card-title fw-bold text-dark">Segurança</h5>
+                        <p class="card-text text-muted">
+                            Sistema seguro com proteções contra falhas e backup automático de dados
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Seção de Estatísticas -->
+    <section class="stats-section py-5">
+        <div class="container">
+            <div class="row text-center">
+                <div class="col-md-4 mb-4 mb-md-0">
+                    <div class="stat-number">24/7</div>
+                    <div class="stat-label">Monitoramento Contínuo</div>
+                </div>
+                <div class="col-md-4 mb-4 mb-md-0">
+                    <div class="stat-number">99.9%</div>
+                    <div class="stat-label">Disponibilidade</div>
+                </div>
+                <div class="col-md-4">
+                    <div class="stat-number">100%</div>
+                    <div class="stat-label">Automatizado</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Rodapé -->
+    <footer class="bg-dark py-4">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6 text-center text-md-start">
+                    <div class="d-flex align-items-center justify-content-center justify-content-md-start">
+                        <i class="bi bi-droplet-fill text-primary me-2" style="font-size: 1.5rem;"></i>
+                        <span class="text-white fw-bold fs-4">Mandacaia</span>
+                    </div>
+                </div>
+                <div class="col-md-6 text-center text-md-end mt-2 mt-md-0">
+                    <p class="text-muted mb-0">
+                        Transformando a gestão de recursos hídricos com tecnologia inteligente
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+{% endblock conteudo %}

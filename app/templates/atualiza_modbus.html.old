@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+<div class="container mt-5">
+    <h2>Atualizar Escravo Modbus: {{ slave.nome }}</h2>
+    <form method="post" id="modbusSlaveForm">
+        {{ form.csrf_token }}
+        <div class="mb-3">
+            {{ form.nome.label(class="form-label") }}
+            {{ form.nome(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.slave_id.label(class="form-label") }}
+            {{ form.slave_id(class="form-control") }}
+        </div>
+
+        <h3>Registradores</h3>
+        <table class="table table-bordered" id="registradoresTable">
+            <thead>
+                <tr>
+                    <th>Endereço</th>
+                    <th>Tipo</th>
+                    <th>Descrição (Opcional)</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Registradores serão adicionados aqui via JavaScript -->
+            </tbody>
+        </table>
+        <button type="button" class="btn btn-secondary mb-3" id="addRegistrador">Adicionar Registrador</button>
+        
+        <input type="hidden" name="registradores_json" id="registradoresJson">
+
+        {{ form.submit(class="btn btn-primary") }}
+    </form>
+</div>
+
+<script>
+    let registradores = [];
+
+    function renderRegistradores() {
+        const registradoresTableBody = document.querySelector('#registradoresTable tbody');
+        registradoresTableBody.innerHTML = '';
+        registradores.forEach((reg, index) => {
+            const row = registradoresTableBody.insertRow();
+            row.innerHTML = `
+                <td><input type="number" class="form-control" value="${reg.endereco}" onchange="updateRegistrador(${index}, 'endereco', this.value)" required></td>
+                <td>
+                    <select class="form-select" onchange="updateRegistrador(${index}, 'tipo', this.value)">
+                        <option value="coil" ${reg.tipo === 'coil' ? 'selected' : ''}>Coil</option>
+                        <option value="holding_register" ${reg.tipo === 'holding_register' ? 'selected' : ''}>Holding Register</option>
+                    </select>
+                </td>
+                <td><input type="text" class="form-control" value="${reg.descricao || ''}" onchange="updateRegistrador(${index}, 'descricao', this.value)"></td>
+                <td><button type="button" class="btn btn-danger btn-sm" onclick="removeRegistrador(${index})">Remover</button></td>
+            `;
+        });
+    }
+
+    function updateRegistrador(index, field, value) {
+        if (field === 'endereco') {
+            registradores[index][field] = parseInt(value) || 0; // Garante que é um número
+        } else {
+            registradores[index][field] = value;
+        }
+    }
+
+    function removeRegistrador(index) {
+        registradores.splice(index, 1);
+        renderRegistradores();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const addRegistradorBtn = document.getElementById('addRegistrador');
+        const modbusSlaveForm = document.getElementById('modbusSlaveForm');
+        const registradoresJsonInput = document.getElementById('registradoresJson');
+
+        // Carregar registradores existentes (se houver)
+        {% if registradores_existentes %}
+            registradores = JSON.parse('{{ registradores_existentes | tojson | safe }}');
+        {% endif %}
+
+        function addRegistradorRow() {
+            registradores.push({ endereco: 0, tipo: 'coil', descricao: '' }); // Inicializar endereco como 0
+            renderRegistradores();
+        }
+
+        addRegistradorBtn.addEventListener('click', addRegistradorRow);
+
+        modbusSlaveForm.addEventListener('submit', function(event) {
+            // Validação adicional antes de enviar
+            for (const reg of registradores) {
+                if (reg.endereco === '' || reg.endereco === null || isNaN(reg.endereco)) {
+                    alert('O endereço do registrador não pode ser vazio.');
+                    console.log('Validação JavaScript: Endereço do registrador vazio ou inválido. Prevenindo submissão.');
+                    event.preventDefault();
+                    return;
+                } else if (reg.endereco < 0) {
+                    alert('O endereço do registrador não pode ser negativo.');
+                    console.log('Validação JavaScript: Endereço do registrador negativo. Prevenindo submissão.');
+                    event.preventDefault();
+                    return;
+                }
+            }
+            registradoresJsonInput.value = JSON.stringify(registradores);
+        });
+
+        // Renderizar registradores ao carregar a página
+        renderRegistradores();
+    });
+</script>
+{% endblock conteudo %}

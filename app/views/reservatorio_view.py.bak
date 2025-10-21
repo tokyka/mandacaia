@@ -1,0 +1,62 @@
+from app import app, db
+from flask import request, redirect, render_template, url_for, flash
+from ..models import reservatorio_model
+from ..models.reservatorio_model import ReservatorioForm # Importar o formulário
+from ..services import reservatorio_service
+
+@app.route('/reservatorios/lista_reservatorios')
+def list_tanks(): # Renomeado
+    return render_template("lista_reservatorios.html", reservatorios=reservatorio_model.Reservatorio.query.join(reservatorio_model.Tiporeservatorio).all())
+
+@app.route('/reservatorios/novo_reservatorio', methods=["GET", "POST"])
+def new_tank(): # Renomeado
+    form = ReservatorioForm()
+    tipos_reservatorio = reservatorio_model.Tiporeservatorio.query.all()
+    form.tipo.choices = [(t.id, t.tipo) for t in tipos_reservatorio]
+
+    if form.validate_on_submit():
+        nome = form.nome.data
+        descricao = form.descricao.data
+        capacidade_maxima = form.capacidade_maxima.data # Novo campo
+        tipo_id = form.tipo.data
+
+        tipo_obj = reservatorio_model.Tiporeservatorio.query.get(tipo_id)
+
+        novo_reservatorio = reservatorio_model.Reservatorio(nome=nome, descricao=descricao, capacidade_maxima=capacidade_maxima, tipos=tipo_obj) # Atualizado
+        reservatorio_model.db.session.add(novo_reservatorio)
+        reservatorio_model.db.session.commit()
+        flash('Reservatório cadastrado com sucesso!', 'success')
+        return redirect(url_for('list_tanks'))
+
+    return render_template("novo_reservatorio.html", form=form)
+
+@app.route('/reservatorios/atualiza_reservatorio/<int:id>', methods=["GET", "POST"])
+def update_tank(id): # Renomeado
+    reservatorio = reservatorio_model.Reservatorio.query.get_or_404(id)
+    form = ReservatorioForm(obj=reservatorio)
+    tipos_reservatorio = reservatorio_model.Tiporeservatorio.query.all()
+    form.tipo.choices = [(t.id, t.tipo) for t in tipos_reservatorio]
+
+    if form.validate_on_submit():
+        form.populate_obj(reservatorio)
+        # Atualizar o objeto Tiporeservatorio manualmente, pois populate_obj não lida com relacionamentos diretamente
+        reservatorio.tipos = reservatorio_model.Tiporeservatorio.query.get(form.tipo.data)
+        db.session.commit()
+        flash('Reservatório atualizado com sucesso!', 'success')
+        return redirect(url_for('list_tanks'))
+
+    # Para o GET request, garantir que o valor selecionado seja o correto
+    if request.method == 'GET':
+        form.tipo.data = reservatorio.tipo_id
+        # Preencher capacidade_maxima para GET request
+        form.capacidade_maxima.data = reservatorio.capacidade_maxima
+
+    return render_template("atualiza_reservatorio.html", form=form, reservatorio=reservatorio)
+
+@app.route('/reservatorios/remove_reservatorio/<int:id>')
+def delete_tank(id): # Renomeado
+    reservatorio = reservatorio_model.Reservatorio.query.get_or_404(id)
+    db.session.delete(reservatorio)
+    db.session.commit()
+    flash('Reservatório removido com sucesso!', 'success')
+    return redirect(url_for('list_tanks'))

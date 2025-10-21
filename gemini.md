@@ -1,0 +1,2 @@
+- Sempre use o português em nossas conversas.
+- Sempre que for criar ou alterar algum arquivo que envolva base de dados, devo primeiro consultar as tabelas relacionadas para que as operações de SELECT, INSERT, DELETE e UPDATE sejam mais precisas.

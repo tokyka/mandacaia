@@ -1,0 +1,10 @@
+werkzeug
+flask
+sqlalchemy
+mariadb
+Flask-WTF
+Flask-SQLAlchemy
+Flask-Migrate
+email_validator
+pymodbus==3.11.3
+Twisted

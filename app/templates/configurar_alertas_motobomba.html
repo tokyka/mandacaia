@@ -1,0 +1,278 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+<style>
+    :root {
+        --primary-blue: #0066cc;
+        --secondary-cyan: #17a2b8;
+        --accent-teal: #20c997;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, #e3f2fd 0%, #b3e5fc 50%, #81d4fa 100%);
+        padding: 2.5rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 20px 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .page-title {
+        background: linear-gradient(135deg, var(--primary-blue), var(--secondary-cyan), var(--accent-teal));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 800;
+        font-size: 2.5rem;
+        margin: 0;
+    }
+
+    .card-custom {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+    }
+
+    .card-header-custom {
+        background: linear-gradient(90deg, var(--primary-blue) 0%, var(--secondary-cyan) 60%, var(--accent-teal) 100%);
+        color: white;
+        padding: 1.5rem;
+        font-weight: 600;
+        font-size: 1.2rem;
+        border-radius: 15px 15px 0 0;
+    }
+
+    .btn-submit, .btn-cancel {
+        font-weight: 600;
+        border: none;
+        padding: 0.6rem 1.4rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        min-width: 120px;
+    }
+
+    .btn-submit {
+        background: var(--primary-blue);
+        color: white;
+    }
+
+    .btn-submit:hover {
+        background: var(--accent-teal);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-cancel {
+        background: #f8d7da;
+        color: #721c24;
+        margin-left: 1rem;
+    }
+
+    .btn-cancel:hover {
+        background: #f5c6cb;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .form-label i {
+        margin-right: 0.5rem;
+        color: var(--primary-blue);
+    }
+
+    .form-row {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .form-row .form-group {
+        flex: 1;
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+
+    .action-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        text-decoration: none;
+    }
+
+    .action-icon i {
+        font-size: 1.1rem;
+    }
+
+    .action-icon.edit:hover {
+        background-color: #d4edda;
+        transform: scale(1.1);
+    }
+
+    .action-icon.delete:hover {
+        background-color: #f8d7da;
+        transform: scale(1.1);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        color: var(--secondary-cyan);
+        margin-bottom: 1rem;
+    }
+</style>
+
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex align-items-center justify-content-center">
+            <i class="bi bi-fuel-pump-fill me-3" style="font-size: 2.5rem; color: var(--primary-blue);"></i>
+            <h2 class="page-title">Configurar Alertas de Motobomba</h2>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="card card-custom mb-4">
+        <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-plus-circle-fill me-2"></i>Nova Configuração de Alerta de Motobomba</span>
+            <a href="{{url_for('configure_alertas_de_monitoramento')}}" role="button" title="Voltar ao Dashboard">
+                <i class="bi bi-arrow-left me-1"></i> Voltar
+            </a>
+        </div>
+        <div class="card-body">
+            {%- for mensagem in get_flashed_messages(category_filter=["error"]) %}
+            <div class="alert alert-danger d-flex align-items-center">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>{{mensagem}}
+            </div>
+            {%- endfor %}
+            <form method="POST">
+                {{ form.hidden_tag() }}
+                <div class="mb-3">
+                    <label class="form-label"><i class="bi bi-fuel-pump-fill"></i>{{ form.motobomba.label.text }}</label>
+                    {{ form.motobomba(class="form-select") }}
+                    {% if form.motobomba.errors %}
+                        <div class="alert alert-danger mt-1">
+                            {% for error in form.motobomba.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="form-row mb-3">
+                    <div class="form-group">
+                        <label class="form-label"><i class="bi bi-lightning-charge-fill"></i>{{ form.perc_variacao_tensao.label.text }}</label>
+                        {{ form.perc_variacao_tensao(class="form-control") }}
+                        {% if form.perc_variacao_tensao.errors %}
+                            <div class="alert alert-danger mt-1">
+                                {% for error in form.perc_variacao_tensao.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><i class="bi bi-activity"></i>{{ form.perc_variacao_corrente.label.text }}</label>
+                        {{ form.perc_variacao_corrente(class="form-control") }}
+                        {% if form.perc_variacao_corrente.errors %}
+                            <div class="alert alert-danger mt-1">
+                                {% for error in form.perc_variacao_corrente.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="mb-3 form-check form-switch">
+                    {{ form.email_notificacao(class="form-check-input", id="flexSwitchCheckEmailNotificacao") }}
+                    <label class="form-check-label" for="flexSwitchCheckEmailNotificacao">
+                        <i class="bi bi-envelope-fill me-1"></i>{{ form.email_notificacao.label.text }}
+                    </label>
+                </div>
+                <div class="mb-3 form-check form-switch">
+                    {{ form.ativo(class="form-check-input", id="flexSwitchCheckAtivo") }}
+                    <label class="form-check-label" for="flexSwitchCheckAtivo">
+                        <i class="bi bi-toggle-on me-1"></i>{{ form.ativo.label.text }}
+                    </label>
+                </div>
+                <div class="form-actions">
+                    {{ form.submit(class="btn btn-submit") }}
+                    <a href="{{url_for('configure_alertas_de_monitoramento')}}" class="btn btn-cancel" role="button">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card card-custom mt-5">
+        <div class="card-header card-header-custom">
+            <span><i class="bi bi-bell-fill me-2"></i>Configurações de Alerta de Motobomba Existentes</span>
+        </div>
+        <div class="card-body p-0">
+            {% if alertas_existentes_motobomba %}
+            <div class="table-responsive">
+                <table class="table table-custom table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col"><i class="bi bi-hash me-1"></i>ID</th>
+                            <th scope="col"><i class="bi bi-fuel-pump-fill me-1"></i>Motobomba</th>
+                            <th scope="col"><i class="bi bi-lightning-charge-fill me-1"></i>Var. Tensão (%)</th>
+                            <th scope="col"><i class="bi bi-activity me-1"></i>Var. Corrente (%)</th>
+                            <th scope="col"><i class="bi bi-envelope-fill me-1"></i>Notificação E-mail</th>
+                            <th scope="col"><i class="bi bi-toggle-on me-1"></i>Ativo</th>
+                            <th scope="col" class="text-center"><i class="bi bi-gear me-1"></i>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for alerta in alertas_existentes_motobomba %}
+                        <tr>
+                            <td><strong>{{ alerta.id }}</strong></td>
+                            <td>{{ alerta.motobomba.nome }}</td>
+                            <td>{{ alerta.perc_variacao_tensao }}</td>
+                            <td>{{ alerta.perc_variacao_corrente }}</td>
+                            <td>
+                                {% if alerta.email_notificacao %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Sim</span>
+                                {% else %}
+                                <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>Não</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if alerta.ativo %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Sim</span>
+                                {% else %}
+                                <span class="badge bg-danger"><i class="bi bi-x-circle-fill me-1"></i>Não</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <a href="{{ url_for('configurar_alertas_motobomba', id=alerta.id) }}" class="action-icon edit me-2" role="button" title="Editar Configuração">
+                                    <i class="bi bi-pencil-square text-success"></i>
+                                </a>
+                                <a href="{{ url_for('excluir_alerta_motobomba', id=alerta.id) }}" class="action-icon delete" role="button" title="Excluir Configuração">
+                                    <i class="bi bi-trash-fill text-danger"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="bi bi-bell-slash"></i>
+                <h4>Nenhuma configuração de alerta de motobomba encontrada</h4>
+                <p>Crie uma nova configuração de alerta acima.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock conteudo %}

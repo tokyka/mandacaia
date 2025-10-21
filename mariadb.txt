@@ -1,0 +1,22 @@
+#Para criar uma nova base de dados
+CREATE DATABASE 'database_name';
+
+#Para criar um novo usuário
+CREATE USER 'user'@localhost IDENTIFIED BY 'password';
+
+#Para listar as bases de dados existentes
+SHOW DATABASES;
+
+#Para listar todos os usuários existentes
+SELECT User FROM mysql.user;
+
+#Para conceder privilegios apenas para a base de dados database_name ao usuário user 
+GRANT ALL PRIVILEGES ON 'database_name'.* TO 'user'@localhost;
+FLUSH PRIVILEGES;
+
+#Para listar os privilegios do usuário user
+SHOW GRANTS FOR 'user'@localhost;
+
+#Para remover o usuário user
+DROP USER 'user'@localhost;
+

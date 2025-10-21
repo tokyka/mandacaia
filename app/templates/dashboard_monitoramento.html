@@ -1,0 +1,284 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+<style>
+    :root {
+        --primary-blue: #0066cc;
+        --secondary-cyan: #17a2b8;
+        --accent-teal: #20c997;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, #e3f2fd 0%, #b3e5fc 50%, #81d4fa 100%);
+        padding: 2.5rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 20px 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .page-title {
+        background: linear-gradient(135deg, var(--primary-blue), var(--secondary-cyan), var(--accent-teal));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 800;
+        font-size: 2.5rem;
+        margin: 0;
+    }
+
+    .card-custom {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+    }
+
+    .card-header-custom {
+        background: linear-gradient(90deg, var(--primary-blue) 0%, var(--secondary-cyan) 60%, var(--accent-teal) 100%);
+        color: white;
+        padding: 1.5rem;
+        font-weight: 600;
+        font-size: 1.2rem;
+        border-radius: 15px 15px 0 0;
+    }
+
+    .btn-submit, .btn-cancel {
+        font-weight: 600;
+        border: none;
+        padding: 0.6rem 1.4rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        min-width: 120px;
+    }
+
+    .btn-submit {
+        background: var(--primary-blue);
+        color: white;
+    }
+
+    .btn-submit:hover {
+        background: var(--accent-teal);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-cancel {
+        background: #f8d7da;
+        color: #721c24;
+        margin-left: 1rem;
+    }
+
+    .btn-cancel:hover {
+        background: #f5c6cb;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .form-label i {
+        margin-right: 0.5rem;
+        color: var(--primary-blue);
+    }
+
+    .form-row {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .form-row .form-group {
+        flex: 1;
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+
+    .list-group-item-action {
+        transition: all 0.3s ease;
+    }
+
+    .list-group-item-action:hover {
+        background-color: #e9ecef;
+        transform: translateX(5px);
+    }
+
+    /* Estilos para o medidor de nível do reservatório */
+    .tank-display {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding: 0.5rem;
+        border-radius: 8px;
+        background-color: #f8f9fa;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .tank-display .tank-icon {
+        font-size: 2rem;
+        margin-right: 1rem;
+        color: var(--primary-blue);
+    }
+
+    .tank-display .tank-info {
+        flex-grow: 1;
+    }
+
+    .tank-display .progress {
+        height: 20px;
+        width: 100px; /* Largura fixa para o medidor */
+        margin-left: 1rem;
+        border-radius: 5px;
+        overflow: hidden;
+    }
+
+    .tank-display .progress-bar {
+        transition: width 0.5s ease-in-out;
+    }
+
+    .tank-display .status-badge {
+        margin-left: 1rem;
+        font-weight: 600;
+    }
+
+    .status-badge.normal {
+        background-color: #ffc107; /* Amarelo */
+        color: #343a40;
+    }
+    .status-badge.baixo {
+        background-color: #dc3545; /* Vermelho */
+    }
+    .status-badge.alto {
+        background-color: #0066cc; /* Azul */
+    }
+</style>
+
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex align-items-center justify-content-center">
+            <i class="bi bi-graph-up me-3" style="font-size: 2.5rem; color: var(--primary-blue);"></i>
+            <h2 class="page-title">Configure Alertas de Monitoramento</h2>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card card-custom">
+                <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-box-seam-fill me-2"></i>Reservatórios</span>
+                    <a href="{{ url_for('configurar_alertas_reservatorio') }}" class="btn btn-secondary btn-sm" role="button" title="Configurar Alertas">
+                        <i class="bi bi-bell-fill me-1"></i> Configurar Alertas
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if reservatorios_data %}
+                        {% for reservatorio in reservatorios_data %}
+                        <div class="tank-display" id="reservatorio-{{ reservatorio.id }}">
+                            <i class="bi bi-droplet-fill tank-icon"></i>
+                            <div class="tank-info">
+                                <h5 class="mb-0">{{ reservatorio.nome }}</h5>
+                                <small>Nível: <span class="nivel-atual">{{ reservatorio.nivel_atual }}</span> L (<span class="porcentagem">{{ reservatorio.porcentagem }}</span>%)</small>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar bg-info" role="progressbar" style="width: {{ reservatorio.porcentagem }}%;" aria-valuenow="{{ reservatorio.porcentagem }}" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <span class="status-badge badge text-white {{ reservatorio.status_alerta }}">
+                                {% if reservatorio.status_alerta == 'baixo' %}
+                                    Baixo
+                                {% elif reservatorio.status_alerta == 'alto' %}
+                                    Alto
+                                {% else %}
+                                    Médio
+                                {% endif %}
+                            </span>
+                            <a href="{{ url_for('reservatorio_detalhes', id=reservatorio.id) }}" class="btn btn-sm btn-outline-primary ms-3" title="Ver Detalhes">
+                                <i class="bi bi-info-circle"></i>
+                            </a>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="bi bi-inbox"></i>
+                        <h4>Nenhum reservatório cadastrado</h4>
+                        <p>Cadastre reservatórios para monitorá-los.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card card-custom">
+                <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-fuel-pump-fill me-2"></i>Motobombas</span>
+                    <a href="{{ url_for('configurar_alertas_motobomba') }}" class="btn btn-secondary btn-sm" role="button" title="Configurar Alertas de Motobomba">
+                        <i class="bi bi-bell-fill me-1"></i> Configurar Alertas
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if motobombas %}
+                    <div class="list-group">
+                        {% for motobomba in motobombas %}
+                        <a href="{{ url_for('motobomba_detalhes', id=motobomba.id) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            {{ motobomba.nome }}
+                            <span class="badge bg-info text-dark rounded-pill">{{ motobomba.potencia }}</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <i class="bi bi-inbox"></i>
+                        <h4>Nenhuma motobomba cadastrada</h4>
+                        <p>Cadastre motobombas para monitorá-las.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+<!--    <div class="row mt-4">
+        <div class="col-12 text-center">
+            <a href="{{ url_for('configurar_alertas_motobomba') }}" class="btn btn-submit">
+                <i class="bi bi-bell-fill me-2"></i>Configurar Alertas
+            </a>
+        </div>
+    </div>-->
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        function fetchReservatorioData() {
+            fetch('{{ url_for("get_niveis_reservatorios") }}')
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(reservatorio => {
+                        const tankDisplay = document.getElementById(`reservatorio-${reservatorio.id}`);
+                        if (tankDisplay) {
+                            tankDisplay.querySelector('.nivel-atual').textContent = reservatorio.nivel_atual;
+                            tankDisplay.querySelector('.porcentagem').textContent = reservatorio.porcentagem;
+                            const progressBar = tankDisplay.querySelector('.progress-bar');
+                            progressBar.style.width = `${reservatorio.porcentagem}%`;
+                            progressBar.setAttribute('aria-valuenow', reservatorio.porcentagem);
+
+                            // Atualizar classe do badge de status
+                            const statusBadge = tankDisplay.querySelector('.status-badge');
+                            statusBadge.className = `status-badge badge text-white ${reservatorio.status_alerta}`;
+                            if (reservatorio.status_alerta === 'baixo') {
+                                statusBadge.textContent = 'Baixo';
+                            } else if (reservatorio.status_alerta === 'alto') {
+                                statusBadge.textContent = 'Alto';
+                            } else {
+                                statusBadge.textContent = 'Normal';
+                            }
+                        }
+                    });
+                })
+                .catch(error => console.error('Erro ao buscar dados do reservatório:', error));
+        }
+
+        // Atualizar a cada 5 segundos
+        setInterval(fetchReservatorioData, 5000);
+    });
+</script>
+{% endblock conteudo %}

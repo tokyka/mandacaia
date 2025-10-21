@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+<h2 style="text-align: center;">Lista de Niveis</h2>
+<hr>
+<table class="table table-bordered table-hover">
+	<thead class="table-dark">
+		<tr>
+			<th scope="col">Id</th>
+			<th scope="col">Volume</th>
+			<th scope="col">Data</th>
+			<th scope="col">Hora</th>
+			<th scope="col">Reservatório</th>
+			<th scope="col">Localização do Reservatório</th>
+		</tr>
+	</thead>
+	<tbody>
+{% for nivel in niveis %}
+		<tr>
+			<td>{{nivel.id}}</td>
+			<td>{{nivel.valor}} %</td>
+			<td>{{nivel.data}}</td>
+			<td>{{nivel.hora}}</td>
+			<td>{{nivel.reservatorio.nome}}</td>
+			<td>{{nivel.reservatorio.tipos.tipo}}</td>
+		</tr>
+{% endfor %}
+	</tbody>
+</table>
+{% endblock conteudo %}

@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+<style>
+    :root {
+        --primary-blue: #0066cc;
+        --secondary-cyan: #17a2b8;
+        --accent-teal: #20c997;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, #e3f2fd 0%, #b3e5fc 50%, #81d4fa 100%);
+        padding: 2.5rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 20px 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .page-title {
+        background: linear-gradient(135deg, var(--primary-blue), var(--secondary-cyan), var(--accent-teal));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 800;
+        font-size: 2.5rem;
+        margin: 0;
+    }
+
+    .card-custom {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+    }
+
+    .card-header-custom {
+        background: linear-gradient(90deg, var(--primary-blue) 0%, var(--secondary-cyan) 60%, var(--accent-teal) 100%);
+        color: white;
+        padding: 1.5rem;
+        font-weight: 600;
+        font-size: 1.2rem;
+    }
+
+    .table-custom thead {
+        background: linear-gradient(90deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+
+    .table-custom thead th {
+        color: #2c3e50;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+        padding: 1rem;
+        border-bottom: 3px solid var(--primary-blue);
+    }
+
+    .table-custom tbody tr:hover {
+        background: linear-gradient(90deg, #f0f9ff 0%, #e0f2fe 100%);
+    }
+
+    .table-custom tbody td {
+        padding: 1rem;
+        vertical-align: middle;
+        color: #495057;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        color: var(--secondary-cyan);
+        margin-bottom: 1rem;
+    }
+</style>
+
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex align-items-center justify-content-center">
+            <i class="bi bi-clock-history me-3" style="font-size: 2.5rem; color: var(--primary-blue);"></i>
+            <h2 class="page-title">Histórico de Acionamentos</h2>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="card card-custom">
+        <div class="card-header card-header-custom">
+            <span><i class="bi bi-list-ul me-2"></i>Registros de Operação das Bombas</span>
+        </div>
+        <div class="card-body p-0">
+            {% if acionamentos %}
+            <div class="table-responsive">
+                <table class="table table-custom table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col">Data</th>
+                            <th scope="col">Bomba</th>
+                            <th scope="col">Início</th>
+                            <th scope="col">Fim</th>
+                            <th scope="col">Duração</th>
+                            <th scope="col">Consumo (kWh)</th>
+                            <th scope="col">Situação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for acionamento in acionamentos %}
+                        <tr>
+                            <td>{{ acionamento.data.strftime('%d/%m/%Y') }}</td>
+                            <td><strong>{{ acionamento.motobomba.nome }}</strong></td>
+                            <td>{{ acionamento.hora_lig.strftime('%H:%M:%S') }}</td>
+                            <td>{{ acionamento.hora_des.strftime('%H:%M:%S') if acionamento.hora_des else '-' }}</td>
+                            <td>{{ acionamento.duracao if acionamento.duracao else 'Em andamento' }}</td>
+                            <td>
+                                {% if acionamento.consumo_kwh is not none %}
+                                    {{ "%.4f"|format(acionamento.consumo_kwh) }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td><span class="badge bg-info">{{ acionamento.situacao.situacao }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="bi bi-inbox"></i>
+                <h4>Nenhum acionamento registrado</h4>
+                <p>O histórico de operações das bombas aparecerá aqui assim que elas forem acionadas.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock conteudo %}

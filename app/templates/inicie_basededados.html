@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+<h2 style="text-align: center;">Inicia a base de dados</h2>
+<hr>
+<table class="table table-bordered table-hover">
+	<thead class="table-dark">
+		<tr>
+			<th scope="col">Id</th>
+			<th scope="col">Situação</th>
+		</tr>
+	</thead>
+	<tbody>
+{% for situacao in situacoes %}
+		<tr>
+			<td>{{situacao.id}}</td>
+			<td>{{situacao.situacao}}</td>
+		</tr>
+{% endfor %}
+	</tbody>
+</table>
+<hr>
+<table class="table table-bordered table-hover">
+	<thead class="table-dark">
+		<tr>
+			<th scope="col">Id</th>
+			<th scope="col">Tipo de Reservatório</th>
+		</tr>
+	</thead>
+	<tbody>
+{% for tipo in reservatorios %}
+		<tr>
+			<td>{{tipo.id}}</td>
+			<td>{{tipo.tipo}}</td>
+		</tr>
+{% endfor %}
+	</tbody>
+</table>
+<hr>
+<table class="table table-bordered table-hover">
+	<thead class="table-dark">
+		<tr>
+			<th scope="col">Id</th>
+			<th scope="col">Polegadas</th>
+			<th scope="col">Milímetros</th>
+		</tr>
+	</thead>
+	<tbody>
+{% for tubo in tubos %}
+		<tr>
+			<td>{{tubo.id}}</td>
+			<td>{{tubo.pol}}</td>
+			<td>{{tubo.mm}}</td>
+		</tr>
+{% endfor %}
+	</tbody>
+</table>
+<form form action="{{url_for('init_database')}}" method="POST" class="form-control"> 
+    <button class="btn btn-primary">Inicializa todas as tabelas</button>
+</form>
+{% endblock conteudo %}

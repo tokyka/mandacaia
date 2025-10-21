@@ -1,0 +1,81 @@
+from app import app
+from app import db
+from flask import request, redirect, render_template, url_for, flash
+from ..models import motobomba_model
+from ..models.motobomba_model import MotobombaForm # Importar o formulário
+
+@app.route('/motobombas/lista_motobombas')
+def list_pumps():
+    motobombas = motobomba_model.Motobomba.query.all()
+    return render_template("lista_motobombas.html", motobombas=motobombas)
+
+@app.route('/motobombas/nova_motobomba', methods=["GET", "POST"])
+def new_pump():
+    form = MotobombaForm()
+    tubos = motobomba_model.Tubospvc.query.all()
+    # Passar t.id como string para as choices
+    form.succao.choices = [(str(t.id), t.pol) for t in tubos]
+    form.recalque.choices = [(str(t.id), t.pol) for t in tubos]
+
+    if form.validate_on_submit():
+        nome = form.nome.data
+        descricao = form.descricao.data
+        modelo = form.modelo.data
+        fabricante = form.fabricante.data
+        potencia = form.potencia.data
+        succao_id = int(form.succao.data) # Converter de volta para int ao usar
+        recalque_id = int(form.recalque.data) # Converter de volta para int ao usar
+        tensao = form.tensao_de_trabalho.data
+
+        succao_obj = motobomba_model.Tubospvc.query.get(succao_id)
+        recalque_obj = motobomba_model.Tubospvc.query.get(recalque_id)
+
+        nova_motobomba = motobomba_model.Motobomba(nome=nome, descricao=descricao, modelo=modelo,
+                                                  fabricante=fabricante, potencia=potencia,
+                                                  succao=succao_obj, recalque=recalque_obj, tensao_de_trabalho=tensao)
+        motobomba_model.db.session.add(nova_motobomba)
+        motobomba_model.db.session.commit()
+        flash('Motobomba cadastrada com sucesso!', 'success')
+        return redirect(url_for('list_pumps'))
+
+    return render_template("nova_motobomba.html", form=form)
+
+@app.route('/motobombas/atualiza_motobomba/<int:id>', methods=["GET", "POST"])
+def update_pump(id):
+    motobomba = motobomba_model.Motobomba.query.get_or_404(id)
+    form = MotobombaForm(obj=motobomba)
+    tubos = motobomba_model.Tubospvc.query.all()
+    # Passar t.id como string para as choices
+    form.succao.choices = [(str(t.id), t.pol) for t in tubos]
+    form.recalque.choices = [(str(t.id), t.pol) for t in tubos]
+
+    if form.validate_on_submit():
+        # form.populate_obj(motobomba) # Removido para lidar com Enum manualmente
+        motobomba.nome = form.nome.data
+        motobomba.descricao = form.descricao.data
+        motobomba.modelo = form.modelo.data
+        motobomba.fabricante = form.fabricante.data
+        motobomba.potencia = form.potencia.data
+        motobomba.succao = motobomba_model.Tubospvc.query.get(int(form.succao.data))
+        motobomba.recalque = motobomba_model.Tubospvc.query.get(int(form.recalque.data))
+        # Converter a string da tensão para o Enum antes de atribuir
+        motobomba.tensao_de_trabalho = motobomba_model.TensaoTrabalho(form.tensao_de_trabalho.data)
+        db.session.commit()
+        flash('Motobomba atualizada com sucesso!', 'success')
+        return redirect(url_for('list_pumps'))
+
+    # Para o GET request, garantir que os valores selecionados sejam strings
+    if request.method == 'GET':
+        form.succao.data = str(motobomba.succao_id)
+        form.recalque.data = str(motobomba.recalque_id)
+        form.tensao_de_trabalho.data = motobomba.tensao_de_trabalho.value # Para o Enum
+
+    return render_template("atualiza_motobomba.html", form=form, motobomba=motobomba)
+
+@app.route('/motobombas/remove_motobomba/<int:id>')
+def delete_pump(id):
+    motobomba = motobomba_model.Motobomba.query.get_or_404(id)
+    db.session.delete(motobomba)
+    db.session.commit()
+    flash('Motobomba removida com sucesso!', 'success')
+    return redirect(url_for('list_pumps'))

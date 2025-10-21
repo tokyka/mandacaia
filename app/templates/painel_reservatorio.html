@@ -1,0 +1,401 @@
+
+{% extends 'base.html' %}
+{% block conteudo %}
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            margin: 2rem auto;
+            padding: 2rem;
+        }
+
+        .header-section {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(30, 60, 114, 0.3);
+        }
+
+        .tank-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 2rem 0;
+            position: relative;
+        }
+
+        #waterTankCanvas {
+            border: 3px solid #2c3e50;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            background: linear-gradient(to bottom, #ecf0f1 0%, #bdc3c7 100%);
+        }
+
+        .control-panel {
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            border-radius: 15px;
+            padding: 1.5rem;
+            color: white;
+            box-shadow: 0 10px 25px rgba(116, 185, 255, 0.3);
+        }
+
+        .info-card {
+            background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+            border-radius: 12px;
+            padding: 1.5rem;
+            color: white;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(0, 184, 148, 0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .info-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .level-display {
+            font-size: 3rem;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .form-select {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            color: white;
+            padding: 0.75rem 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .form-select:focus {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.6);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25);
+            color: white;
+        }
+
+        .form-select option {
+            background: #0984e3;
+            color: white;
+            padding: 0.5rem;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+            animation: pulse 2s infinite;
+        }
+
+        .status-low { background-color: #e74c3c; }
+        .status-medium { background-color: #f39c12; }
+        .status-high { background-color: #27ae60; }
+        .bg-danger { background-color: #e74c3c; }
+        .bg-warning { background-color: #f39c12; }
+        .bg-success { background-color: #27ae60; }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @media (max-width: 768px) {
+            #waterTankCanvas {
+                width: 280px;
+                height: 350px;
+            }
+
+            .level-display {
+                font-size: 2rem;
+            }
+        }
+    </style>
+
+    <div class="container">
+        <div class="main-container animate-in">
+            <!-- Header -->
+            <div class="header-section">
+                <h1 class="mb-3">
+                    <i class="fas fa-tint me-3"></i>
+                    Painel de Monitoramento
+                </h1>
+                <p class="mb-0 fs-5">Sistema de Controle de Caixa d'Água</p>
+            </div>
+
+            <div class="row">
+                <!-- Canvas da Caixa d'Água -->
+                <div class="col-lg-8">
+                    <div class="tank-container">
+                        <canvas id="waterTankCanvas" width="400" height="500"></canvas>
+                    </div>
+                </div>
+
+                <!-- Painel de Controle -->
+                <div class="col-lg-4">
+                    <!-- Informações do Nível -->
+                    <div class="info-card mb-4">
+                        <h4 class="mb-3">
+                            <i class="fas fa-chart-line me-2"></i>
+                            Nível Atual
+                        </h4>
+                        <div id="levelDisplay" class="level-display">--%</div>
+                        <div class="mt-2">
+                            <span id="statusIndicator" class="status-indicator"></span>
+                            <span id="statusText">--</span>
+                        </div>
+                    </div>
+
+                    <!-- Controles -->
+                    <div class="control-panel">
+                        <h5 class="mb-3">
+                            <i class="fas fa-sliders-h me-2"></i>
+                            Controles
+                        </h5>
+
+                        <div class="mb-3">
+                            <label for="reservoirSelect" class="form-label">
+                                <i class="fas fa-water me-2"></i>
+                                Selecionar Reservatório
+                            </label>
+                            <select class="form-select" id="reservoirSelect">
+                                {% for r in reservatorios %}
+                                    <option value="{{ r.id }}">{{ r.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mt-4">
+                            <h6>Informações:</h6>
+                            <small>
+                                <i class="fas fa-info-circle me-1"></i>
+                                Capacidade: <span id="capacityDisplay">-- L</span><br>
+                                <i class="fas fa-thermometer-half me-1"></i>
+                                Volume Atual: <span id="volumeDisplay">-- L</span>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class WaterTankSimulation {
+            constructor(initialData) {
+                this.canvas = document.getElementById('waterTankCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.waveOffset = 0;
+                this.reservoirs = initialData;
+                this.currentReservoirId = Object.keys(this.reservoirs)[0] || null;
+
+                this.selectElement = document.getElementById('reservoirSelect');
+                this.selectElement.addEventListener('change', () => {
+                    this.currentReservoirId = this.selectElement.value;
+                    this.updateDisplay();
+                });
+
+                this.animate();
+                this.updateDisplay(); // Initial display update
+            }
+
+            updateData(newData) {
+                this.reservoirs = newData;
+                // Ensure currentReservoirId is still valid
+                if (!this.reservoirs[this.currentReservoirId]) {
+                    this.currentReservoirId = Object.keys(this.reservoirs)[0] || null;
+                }
+                this.updateDisplay();
+            }
+
+            updateDisplay() {
+                if (!this.currentReservoirId) return;
+
+                const reservoir = this.reservoirs[this.currentReservoirId];
+                const levelDisplay = document.getElementById('levelDisplay');
+                const volumeDisplay = document.getElementById('volumeDisplay');
+                const capacityDisplay = document.getElementById('capacityDisplay');
+                const statusIndicator = document.getElementById('statusIndicator');
+                const statusText = document.getElementById('statusText');
+
+                levelDisplay.textContent = `${Math.round(reservoir.porcentagem)}%`;
+                volumeDisplay.textContent = `${parseFloat(reservoir.nivel_atual).toFixed(0)} L`;
+                capacityDisplay.textContent = `${Math.round(reservoir.capacidade_maxima)} L`;
+
+                // Atualizar status e cor
+                statusIndicator.className = `status-indicator ${reservoir.cor_barra}`;
+                statusText.textContent = `Nível ${reservoir.status_nivel}`;
+                levelDisplay.className = `level-display text-${reservoir.cor_barra.replace('bg-', '')}`;
+            }
+
+            drawTank() {
+                const ctx = this.ctx;
+                const canvas = this.canvas;
+                if (!this.currentReservoirId) {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    return;
+                }
+                const reservoir = this.reservoirs[this.currentReservoirId];
+                const waterLevel = reservoir.porcentagem;
+
+                // Limpar canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Dimensões da caixa
+                const tankX = 50;
+                const tankY = 50;
+                const tankWidth = 300;
+                const tankHeight = 400;
+                const tankThickness = 8;
+
+                // Fundo da caixa (interno)
+                ctx.fillStyle = '#ecf0f1';
+                ctx.fillRect(tankX, tankY, tankWidth, tankHeight);
+
+                // Calcular altura da água
+                const waterHeight = (waterLevel / 100) * (tankHeight - 20);
+                const waterY = tankY + tankHeight - waterHeight - 10;
+
+                // Desenhar água com gradiente
+                if (waterHeight > 0) {
+                    const gradient = ctx.createLinearGradient(0, waterY, 0, waterY + waterHeight);
+                    gradient.addColorStop(0, '#74b9ff');
+                    gradient.addColorStop(0.3, '#0984e3');
+                    gradient.addColorStop(0.7, '#2d3436');
+                    gradient.addColorStop(1, '#636e72');
+
+                    ctx.fillStyle = gradient;
+
+                    // Desenhar água com ondas
+                    ctx.beginPath();
+                    ctx.moveTo(tankX + 10, waterY + waterHeight);
+
+                    // Linha inferior da água
+                    ctx.lineTo(tankX + tankWidth - 10, waterY + waterHeight);
+                    ctx.lineTo(tankX + tankWidth - 10, tankY + tankHeight - 10);
+                    ctx.lineTo(tankX + 10, tankY + tankHeight - 10);
+
+                    // Superfície da água com ondas
+                    for (let x = tankX + 10; x <= tankX + tankWidth - 10; x += 2) {
+                        const waveHeight = Math.sin((x - tankX) * 0.02 + this.waveOffset) * 3;
+                        ctx.lineTo(x, waterY + waveHeight);
+                    }
+
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // Reflexos na água
+                    const reflectionGradient = ctx.createLinearGradient(0, waterY, 0, waterY + 30);
+                    reflectionGradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+                    reflectionGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+                    ctx.fillStyle = reflectionGradient;
+                    ctx.fillRect(tankX + 10, waterY, tankWidth - 20, 30);
+                }
+
+                // Bordas da caixa
+                ctx.strokeStyle = '#2c3e50';
+                ctx.lineWidth = tankThickness;
+                ctx.strokeRect(tankX, tankY, tankWidth, tankHeight);
+
+                // Marcações de nível
+                ctx.strokeStyle = '#7f8c8d';
+                ctx.lineWidth = 2;
+                for (let i = 1; i <= 4; i++) {
+                    const markY = tankY + (tankHeight / 5) * i;
+                    ctx.beginPath();
+                    ctx.moveTo(tankX - 15, markY);
+                    ctx.lineTo(tankX + 15, markY);
+                    ctx.stroke();
+
+                    // Texto das marcações
+                    ctx.fillStyle = '#2c3e50';
+                    ctx.font = '12px Arial';
+                    ctx.textAlign = 'right';
+                    ctx.fillText((100 - (i * 20)) + '%', tankX - 20, markY + 4);
+                }
+
+                // Título da caixa
+                ctx.fillStyle = '#2c3e50';
+                ctx.font = 'bold 14px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(reservoir.nome.toUpperCase(), tankX + tankWidth / 2, tankY - 20);
+            }
+
+            animate() {
+                // Atualizar offset das ondas
+                this.waveOffset += 0.05;
+
+                // Desenhar tudo
+                this.drawTank();
+
+                // Continuar animação
+                requestAnimationFrame(() => this.animate());
+            }
+        }
+
+        let waterTank;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Instanciar a simulação com dados vazios inicialmente.
+            waterTank = new WaterTankSimulation({});
+
+            function fetchReservoirData() {
+                fetch('{{ url_for("get_niveis_reservatorios") }}')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.length === 0) return; // Não faz nada se não houver reservatórios
+
+                        const reservoirsDict = data.reduce((acc, res) => {
+                            acc[res.id] = res;
+                            return acc;
+                        }, {});
+                        
+                        // Se for a primeira carga, define o reservatório atual
+                        if (waterTank.currentReservoirId === null) {
+                            waterTank.currentReservoirId = data[0].id;
+                        }
+
+                        waterTank.updateData(reservoirsDict);
+                    })
+                    .catch(error => console.error('Erro ao buscar dados do reservatório:', error));
+            }
+
+            // Buscar dados imediatamente ao carregar a página
+            fetchReservoirData();
+            
+            // Configurar atualização periódica
+            setInterval(fetchReservoirData, 5000);
+        });
+    </script>
+{% endblock conteudo %}

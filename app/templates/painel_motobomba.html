@@ -1,0 +1,560 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+    <style>
+        body {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            margin: 2rem auto;
+            padding: 2rem;
+        }
+
+        .header-section {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(231, 76, 60, 0.3);
+        }
+
+        .pump-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 2rem 0;
+        }
+
+        #pumpCanvas {
+            border: 3px solid #2c3e50;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            background: linear-gradient(to bottom, #ecf0f1 0%, #bdc3c7 100%);
+        }
+
+        .control-panel {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            border-radius: 15px;
+            padding: 1.5rem;
+            color: white;
+            box-shadow: 0 10px 25px rgba(231, 76, 60, 0.3);
+        }
+
+        .info-card {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            border-radius: 12px;
+            padding: 1.5rem;
+            color: white;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(39, 174, 96, 0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .info-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .status-display {
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-custom {
+            border-radius: 25px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            border: none;
+            transition: all 0.3s ease;
+            margin: 0.25rem;
+        }
+
+        .btn-start {
+            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            color: white;
+        }
+
+        .btn-start:hover {
+            background: linear-gradient(135deg, #229954 0%, #1e8449 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(39, 174, 96, 0.4);
+        }
+
+        .btn-stop {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+        }
+
+        .btn-stop:hover {
+            background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(231, 76, 60, 0.4);
+        }
+
+        .slider-container {
+            margin: 1rem 0;
+        }
+
+        .form-range {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            height: 8px;
+        }
+
+        .form-range::-webkit-slider-thumb {
+            background: white;
+            border: 3px solid #c0392b;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+            animation: pulse 2s infinite;
+        }
+
+        .status-off { background-color: #95a5a6; }
+        .status-on { background-color: #27ae60; }
+        .status-error { background-color: #e74c3c; }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .rotating {
+            animation: rotate 2s linear infinite;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        .pressure-gauge {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            border-radius: 12px;
+            padding: 1.5rem;
+            color: white;
+            text-align: center;
+            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.3);
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            #pumpCanvas {
+                width: 280px;
+                height: 350px;
+            }
+
+            .status-display {
+                font-size: 2rem;
+            }
+        }
+    </style>
+    <div class="container">
+        <div class="main-container animate-in">
+            <!-- Header -->
+            <div class="header-section">
+                <h1 class="mb-3">
+                    <i class="fas fa-cogs me-3"></i>
+                    Painel de Controle
+                </h1>
+                <p class="mb-0 fs-5">Sistema de Monitoramento de Bomba d'Água</p>
+            </div>
+
+            <div class="row">
+                <!-- Canvas da Bomba -->
+                <div class="col-lg-8">
+                    <div class="pump-container">
+                        <canvas id="pumpCanvas" width="400" height="500"></canvas>
+                    </div>
+                </div>
+
+                <!-- Painel de Controle -->
+                <div class="col-lg-4">
+                    <!-- Status da Bomba -->
+                    <div class="info-card mb-4">
+                        <h4 class="mb-3">
+                            <i class="fas fa-power-off me-2"></i>
+                            Status da Bomba
+                        </h4>
+                        <div class="status-display" id="statusDisplay">DESLIGADA</div>
+                        <div class="mt-2">
+                            <span class="status-indicator status-off" id="statusIndicator"></span>
+                            <span id="statusText">Sistema Parado</span>
+                        </div>
+                    </div>
+
+                    <!-- Medidor de Pressão -->
+                    <div class="pressure-gauge">
+                        <h5 class="mb-2">
+                            <i class="fas fa-tachometer-alt me-2"></i>
+                            Pressão
+                        </h5>
+                        <div class="fs-4 fw-bold" id="pressureDisplay">0.0 bar</div>
+                    </div>
+
+                    <!-- Controles -->
+                    <div class="control-panel">
+                        <h5 class="mb-3">
+                            <i class="fas fa-sliders-h me-2"></i>
+                            Controles
+                        </h5>
+
+                        <div class="slider-container">
+                            <label for="flowSlider" class="form-label">Vazão (%)</label>
+                            <input type="range" class="form-range" min="0" max="100" value="0" id="flowSlider" disabled>
+                        </div>
+
+                        <div class="d-grid gap-2 mt-3">
+                            <button class="btn btn-custom btn-start" onclick="startPump()" id="startBtn">
+                                <i class="fas fa-play me-2"></i>
+                                Ligar Bomba
+                            </button>
+                            <button class="btn btn-custom btn-stop" onclick="stopPump()" id="stopBtn" disabled>
+                                <i class="fas fa-stop me-2"></i>
+                                Desligar Bomba
+                            </button>
+                        </div>
+
+                        <div class="mt-4">
+                            <h6>Informações:</h6>
+                            <small>
+                                <i class="fas fa-info-circle me-1"></i>
+                                Potência: <span id="potenciaDisplay">--</span> CV<br>
+                                <i class="fas fa-tint me-1"></i>
+                                Vazão Atual: <span id="flowDisplay">0 L/min</span><br>
+                                <i class="fas fa-clock me-1"></i>
+                                Tempo Funcionamento: <span id="runtimeDisplay">00:00:00</span>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class WaterPumpSimulation {
+            constructor() {
+                this.canvas = document.getElementById('pumpCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.isRunning = false;
+                this.flowRate = 0; // Porcentagem (0-100)
+                this.targetFlow = 0;
+                this.animationSpeed = 0.5;
+                this.rotationAngle = 0;
+                this.waterParticles = [];
+                this.pressure = 0; // bar
+                this.maxPressure = 5.0; // bar
+
+                this.animate();
+            }
+
+            setTargetFlow(flow) {
+                this.targetFlow = Math.max(0, Math.min(100, flow));
+                this.updateDisplay();
+            }
+
+            updateDisplay() {
+                const statusDisplay = document.getElementById('statusDisplay');
+                const flowDisplay = document.getElementById('flowDisplay');
+                const pressureDisplay = document.getElementById('pressureDisplay');
+                const statusIndicator = document.getElementById('statusIndicator');
+                const statusText = document.getElementById('statusText');
+
+                if (this.isRunning) {
+                    statusDisplay.textContent = 'LIGADA';
+                    statusIndicator.className = 'status-indicator status-on';
+                    statusText.textContent = 'Sistema em Operação';
+                } else {
+                    statusDisplay.textContent = 'DESLIGADA';
+                    statusIndicator.className = 'status-indicator status-off';
+                    statusText.textContent = 'Sistema Parado';
+                }
+
+                const currentFlow = Math.round((this.flowRate / 100) * 120); // L/min máximo
+                flowDisplay.textContent = currentFlow + ' L/min';
+
+                this.pressure = (this.flowRate / 100) * this.maxPressure;
+                pressureDisplay.textContent = this.pressure.toFixed(1) + ' bar';
+            }
+
+            createWaterParticles() {
+                if (this.isRunning && this.flowRate > 0) {
+                    for (let i = 0; i < Math.floor(this.flowRate / 20); i++) {
+                        this.waterParticles.push({
+                            x: 200 + Math.random() * 20 - 10,
+                            y: 350,
+                            vx: (Math.random() - 0.5) * 2,
+                            vy: -2 - Math.random() * 3,
+                            size: 2 + Math.random() * 3,
+                            life: 1.0
+                        });
+                    }
+                }
+            }
+
+            updateWaterParticles() {
+                for (let i = this.waterParticles.length - 1; i >= 0; i--) {
+                    const particle = this.waterParticles[i];
+                    particle.x += particle.vx;
+                    particle.y += particle.vy;
+                    particle.vy += 0.1; // gravidade
+                    particle.life -= 0.02;
+
+                    if (particle.life <= 0 || particle.y > 500) {
+                        this.waterParticles.splice(i, 1);
+                    }
+                }
+            }
+
+            drawPump() {
+                const ctx = this.ctx;
+                const canvas = this.canvas;
+
+                // Limpar canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Base da bomba
+                const pumpX = 150;
+                const pumpY = 250;
+                const pumpWidth = 100;
+                const pumpHeight = 80;
+
+                // Corpo da bomba
+                const gradient = ctx.createLinearGradient(pumpX, pumpY, pumpX, pumpY + pumpHeight);
+                gradient.addColorStop(0, '#34495e');
+                gradient.addColorStop(0.5, '#2c3e50');
+                gradient.addColorStop(1, '#1a252f');
+
+                ctx.fillStyle = gradient;
+                ctx.fillRect(pumpX, pumpY, pumpWidth, pumpHeight);
+
+                // Bordas da bomba
+                ctx.strokeStyle = '#1a252f';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(pumpX, pumpY, pumpWidth, pumpHeight);
+
+                // Motor (círculo)
+                const motorX = pumpX + pumpWidth / 2;
+                const motorY = pumpY - 40;
+                const motorRadius = 35;
+
+                const motorGradient = ctx.createRadialGradient(motorX, motorY, 0, motorX, motorY, motorRadius);
+                motorGradient.addColorStop(0, '#95a5a6');
+                motorGradient.addColorStop(0.7, '#7f8c8d');
+                motorGradient.addColorStop(1, '#34495e');
+
+                ctx.fillStyle = motorGradient;
+                ctx.beginPath();
+                ctx.arc(motorX, motorY, motorRadius, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.stroke();
+
+                // Rotor (centro do motor)
+                ctx.save();
+                ctx.translate(motorX, motorY);
+                if (this.isRunning) {
+                    ctx.rotate(this.rotationAngle);
+                }
+
+                // Pás do rotor
+                ctx.strokeStyle = this.isRunning ? '#e74c3c' : '#7f8c8d';
+                ctx.lineWidth = 4;
+                for (let i = 0; i < 6; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(25, 0);
+                    ctx.stroke();
+                    ctx.rotate(Math.PI / 3);
+                }
+                ctx.restore();
+
+                // Tubulação de entrada
+                ctx.fillStyle = '#7f8c8d';
+                ctx.fillRect(50, pumpY + 20, 100, 20);
+                ctx.strokeRect(50, pumpY + 20, 100, 20);
+
+                // Tubulação de saída
+                ctx.fillRect(pumpX + 20, pumpY + pumpHeight, 20, 100);
+                ctx.strokeRect(pumpX + 20, pumpY + pumpHeight, 20, 100);
+
+                // Indicador de fluxo na entrada
+                if (this.isRunning && this.flowRate > 0) {
+                    ctx.fillStyle = '#3498db';
+                    const flowWidth = (this.flowRate / 100) * 80;
+                    ctx.fillRect(60, pumpY + 25, flowWidth, 10);
+                }
+
+                // Partículas de água
+                this.waterParticles.forEach(particle => {
+                    ctx.fillStyle = `rgba(52, 152, 219, ${particle.life})`;
+                    ctx.beginPath();
+                    ctx.arc(particle.x, particle.y, particle.size, 0, 2 * Math.PI);
+                    ctx.fill();
+                });
+
+                // Medidor de pressão visual
+                const gaugeX = 280;
+                const gaugeY = 150;
+                const gaugeRadius = 40;
+
+                // Fundo do medidor
+                ctx.fillStyle = '#ecf0f1';
+                ctx.beginPath();
+                ctx.arc(gaugeX, gaugeY, gaugeRadius, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.strokeStyle = '#2c3e50';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Ponteiro do medidor
+                ctx.save();
+                ctx.translate(gaugeX, gaugeY);
+                const angle = (this.pressure / this.maxPressure) * Math.PI - Math.PI / 2;
+                ctx.rotate(angle);
+                ctx.strokeStyle = '#e74c3c';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(30, 0);
+                ctx.stroke();
+                ctx.restore();
+
+                // Escala do medidor
+                ctx.fillStyle = '#2c3e50';
+                ctx.font = '10px Arial';
+                ctx.textAlign = 'center';
+                for (let i = 0; i <= 5; i++) {
+                    const scaleAngle = (i / 5) * Math.PI - Math.PI / 2;
+                    const textX = gaugeX + Math.cos(scaleAngle) * 50;
+                    const textY = gaugeY + Math.sin(scaleAngle) * 50;
+                    ctx.fillText(i.toString(), textX, textY);
+                }
+
+                // Título da bomba
+                ctx.fillStyle = '#2c3e50';
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('BOMBA D\'ÁGUA', canvas.width / 2, 50);
+
+                // Status visual
+                const statusColor = this.isRunning ? '#27ae60' : '#95a5a6';
+                ctx.fillStyle = statusColor;
+                ctx.beginPath();
+                ctx.arc(350, 80, 8, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+
+            animate() {
+                // Suavizar transição do fluxo
+                if (Math.abs(this.flowRate - this.targetFlow) > 0.1) {
+                    const diff = this.targetFlow - this.flowRate;
+                    this.flowRate += diff * this.animationSpeed * 0.05;
+                }
+
+                // Rotação do motor
+                if (this.isRunning) {
+                    this.rotationAngle += 0.3 + (this.flowRate / 100) * 0.2;
+                }
+
+                // Criar e atualizar partículas
+                this.createWaterParticles();
+                this.updateWaterParticles();
+
+                // Desenhar tudo
+                this.drawPump();
+                this.updateDisplay();
+
+                // Continuar animação
+                requestAnimationFrame(() => this.animate());
+            }
+
+            startPump() {
+                if (this.isRunning) return;
+                this.isRunning = true;
+                this.setTargetFlow(50); // Iniciar com 50% de fluxo
+            }
+
+            stopPump() {
+                if (!this.isRunning) return;
+                this.isRunning = false;
+                this.setTargetFlow(0);
+                this.waterParticles = []; // Limpar partículas
+            }
+        }
+
+        let waterPump;
+        document.addEventListener('DOMContentLoaded', function() {
+            waterPump = new WaterPumpSimulation();
+
+            const potenciaDisplay = document.getElementById('potenciaDisplay');
+            const runtimeDisplay = document.getElementById('runtimeDisplay');
+
+            // Desabilitar botões de controle manual, pois o status vem da API
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('flowSlider').disabled = true;
+
+            function fetchPumpStatus() {
+                fetch('{{ url_for("get_status_motobomba") }}')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'LIGADA') {
+                            waterPump.startPump();
+                        } else { // Inclui DESLIGADA e ERRO
+                            waterPump.stopPump();
+                        }
+                        // Atualiza os dados de informação com os valores da API
+                        potenciaDisplay.textContent = data.potencia || '--';
+                        runtimeDisplay.textContent = data.runtime || '00:00:00';
+                    })
+                    .catch(error => {
+                        console.error('Erro ao buscar status da bomba:', error);
+                        waterPump.stopPump(); // Para a animação em caso de erro
+                        potenciaDisplay.textContent = 'Erro';
+                        runtimeDisplay.textContent = '--:--:--';
+                    });
+            }
+
+            fetchPumpStatus(); // Chamar imediatamente
+            setInterval(fetchPumpStatus, 5000); // E a cada 5 segundos
+        });
+
+        // As funções globais não são mais necessárias para os botões
+        function startPump() {}
+        function stopPump() {}
+    </script>
+{% endblock conteudo %}

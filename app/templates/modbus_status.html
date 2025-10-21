@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+<style>
+    .status-online {
+        color: #198754; /* Verde */
+        font-weight: bold;
+    }
+    .status-offline {
+        color: #dc3545; /* Vermelho */
+        font-weight: bold;
+    }
+    .status-indefinido {
+        color: #6c757d; /* Cinza */
+        font-weight: bold;
+    }
+    .card-header-online {
+        background-color: rgba(25, 135, 84, 0.1);
+        border-left: 5px solid #198754;
+    }
+    .card-header-offline {
+        background-color: rgba(220, 53, 69, 0.1);
+        border-left: 5px solid #dc3545;
+    }
+    .card-header-indefinido {
+        background-color: rgba(108, 117, 125, 0.1);
+        border-left: 5px solid #6c757d;
+    }
+</style>
+
+<div class="container mt-5">
+    <div class="text-center mb-5">
+        <h2 class="fw-bold text-primary">
+            <i class="bi bi-hdd-network-fill me-2"></i>Status dos Escravos Modbus
+        </h2>
+        <p class="text-muted">O status de cada slave é verificado periodicamente pelo controlador mestre.</p>
+    </div>
+
+    {% if slaves %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for slave in slaves %}
+                {% set status_class = 'indefinido' %}
+                {% if slave.status == 'Online' %}
+                    {% set status_class = 'online' %}
+                {% elif slave.status == 'Offline' %}
+                    {% set status_class = 'offline' %}
+                {% endif %}
+
+                <div class="col">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-header card-header-{{ status_class }}">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-cpu-fill me-2"></i>{{ slave.nome }}
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">
+                                <strong>ID do Slave:</strong> {{ slave.slave_id }}
+                            </p>
+                            <p class="card-text">
+                                <strong>Status:</strong> 
+                                <span class="status-{{ status_class }}">{{ slave.status }}</span>
+                            </p>
+                            <p class="card-text">
+                                <small class="text-muted">
+                                    <strong>Última verificação:</strong>
+                                    {{ slave.last_seen.strftime('%d/%m/%Y %H:%M:%S') if slave.last_seen else 'Nunca' }}
+                                </small>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-warning text-center" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>Nenhum escravo Modbus cadastrado no sistema.
+        </div>
+    {% endif %}
+</div>
+{% endblock conteudo %}

@@ -1,0 +1,124 @@
+from app import app, db
+from flask import render_template, redirect, url_for, flash, request, jsonify
+from ..services import modbus_service
+from ..models.modbus_model import ModbusSlave, ModbusSlaveForm, ModbusRegister, DeleteForm # Removido ModbusRegisterForm
+
+@app.route("/modbus/status")
+def status():
+    slaves = ModbusSlave.query.all()
+    slave_statuses = [modbus_service.read_slave_status(slave) for slave in slaves]
+    return render_template("modbus_status.html", slave_statuses=slave_statuses)
+
+@app.route("/modbus/lista")
+def lista_modbus():
+    slaves = ModbusSlave.query.all()
+    form = DeleteForm() # Instancia o formulário de exclusão
+    return render_template("lista_modbus.html", slaves=slaves, form=form)
+
+@app.route("/modbus/novo", methods=["GET", "POST"])
+def novo_modbus():
+    app.logger.info("Entrou na função novo_modbus")
+    form = ModbusSlaveForm()
+    if request.method == 'POST':
+        app.logger.info(f"Dados do formulário recebidos em novo_modbus (POST): {request.form}")
+    if form.validate_on_submit():
+        app.logger.info(f"form.validate_on_submit() retornou True em novo_modbus")
+        new_slave = ModbusSlave(
+            nome=form.nome.data,
+            slave_id=form.slave_id.data
+        )
+        db.session.add(new_slave)
+        db.session.commit()
+
+        # Processar registradores
+        registradores_data = request.form.get('registradores_json')
+        app.logger.info(f"Dados dos registradores recebidos: {registradores_data}")
+        if registradores_data:
+            import json
+            registradores_list = json.loads(registradores_data)
+            app.logger.info(f"Registradores processados: {registradores_list}")
+            for reg_data in registradores_list:
+                new_register = ModbusRegister(
+                    slave_id=new_slave.id,
+                    endereco=reg_data['endereco'],
+                    tipo=reg_data['tipo'],
+                    descricao=reg_data.get('descricao')
+                )
+                db.session.add(new_register)
+            db.session.commit()
+        else:
+            app.logger.info("registradores_json está vazio ou não foi enviado em novo_modbus")
+
+        flash("Escravo Modbus criado com sucesso!", "success")
+        return redirect(url_for("lista_modbus"))
+    else:
+        app.logger.info(f"form.validate_on_submit() retornou False em novo_modbus. Erros: {form.errors}")
+    return render_template("novo_modbus.html", form=form)
+
+@app.route("/modbus/atualiza/<int:id>", methods=["GET", "POST"])
+def atualiza_modbus(id):
+    app.logger.info(f"Entrou na função atualiza_modbus para o ID: {id}")
+    slave = ModbusSlave.query.get_or_404(id)
+    form = ModbusSlaveForm(obj=slave)
+    registradores_existentes_serializaveis = []
+
+    if request.method == 'GET':
+        # Para o método GET, carregar os registradores existentes para o template
+        # Converter objetos ModbusRegister para dicionários serializáveis
+        for reg in slave.registradores:
+            registradores_existentes_serializaveis.append({
+                'id': reg.id,
+                'endereco': reg.endereco,
+                'tipo': reg.tipo,
+                'descricao': reg.descricao
+            })
+        return render_template("atualiza_modbus.html", form=form, slave=slave, registradores_existentes=registradores_existentes_serializaveis)
+    
+    if request.method == 'POST':
+        app.logger.info(f"Dados do formulário recebidos em atualiza_modbus (POST): {request.form}")
+        if form.validate_on_submit():
+            app.logger.info(f"form.validate_on_submit() retornou True em atualiza_modbus para o ID: {id}")
+            slave.nome = form.nome.data
+            slave.slave_id = form.slave_id.data
+                
+            # Excluir registradores existentes e adicionar os novos
+            ModbusRegister.query.filter_by(slave_id=slave.id).delete()
+                
+            registradores_data = request.form.get('registradores_json')
+            app.logger.info(f"Dados dos registradores recebidos para atualização: {registradores_data}")
+            if registradores_data:
+                import json
+                registradores_list = json.loads(registradores_data)
+                app.logger.info(f"Registradores processados para atualização: {registradores_list}")
+                for reg_data in registradores_list:
+                    new_register = ModbusRegister(
+                        slave_id=slave.id,
+                        endereco=reg_data['endereco'],
+                        tipo=reg_data['tipo'],
+                        descricao=reg_data.get('descricao')
+                    )
+                    db.session.add(new_register)
+            else:
+                app.logger.info(f"registradores_json está vazio ou não foi enviado em atualiza_modbus para o ID: {id}")
+            flash("Escravo Modbus atualizado com sucesso!", "success")
+            db.session.commit()
+            return redirect(url_for("lista_modbus"))
+        else:
+            app.logger.info(f"form.validate_on_submit() retornou False em atualiza_modbus para o ID: {id}. Erros: {form.errors}")
+            flash("Erro ao atualizar Escravo Modbus! Verifique os dados.", "danger")
+            # Se a validação falhar, tentar carregar os registradores do JSON enviado para manter o estado
+            registradores_data_post = request.form.get('registradores_json')
+            if registradores_data_post:
+                import json
+                registradores_existentes_serializaveis = json.loads(registradores_data_post)
+            return render_template("atualiza_modbus.html", form=form, slave=slave, registradores_existentes=registradores_existentes_serializaveis)
+
+@app.route("/modbus/exclui/<int:id>", methods=["POST"])
+def exclui_modbus(id):
+    slave = ModbusSlave.query.get_or_404(id)
+    db.session.delete(slave)
+    db.session.commit()
+    flash("Escravo Modbus excluído com sucesso!", "success")
+    return redirect(url_for("lista_modbus"))
+
+# As rotas de registradores foram removidas conforme solicitado.

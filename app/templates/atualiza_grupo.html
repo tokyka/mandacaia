@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+<style>
+    :root {
+        --primary-blue: #0066cc;
+        --secondary-cyan: #17a2b8;
+        --accent-teal: #20c997;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, #e3f2fd 0%, #b3e5fc 50%, #81d4fa 100%);
+        padding: 2.5rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 20px 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .page-title {
+        background: linear-gradient(135deg, var(--primary-blue), var(--secondary-cyan), var(--accent-teal));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 800;
+        font-size: 2.5rem;
+        margin: 0;
+    }
+
+    .card-custom {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+    }
+
+    .card-header-custom {
+        background: linear-gradient(90deg, var(--primary-blue) 0%, var(--secondary-cyan) 60%, var(--accent-teal) 100%);
+        color: white;
+        padding: 1.5rem;
+        font-weight: 600;
+        font-size: 1.2rem;
+        border-radius: 15px 15px 0 0;
+    }
+
+    .btn-submit, .btn-cancel {
+        font-weight: 600;
+        border: none;
+        padding: 0.6rem 1.4rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        min-width: 120px;
+    }
+
+    .btn-submit {
+        background: var(--primary-blue);
+        color: white;
+    }
+
+    .btn-submit:hover {
+        background: var(--accent-teal);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-cancel {
+        background: #f8d7da;
+        color: #721c24;
+        margin-left: 1rem;
+    }
+
+    .btn-cancel:hover {
+        background: #f5c6cb;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .form-label i {
+        margin-right: 0.5rem;
+        color: var(--primary-blue);
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+</style>
+
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex align-items-center justify-content-center">
+            <i class="bi bi-collection-fill me-3" style="font-size: 2.5rem; color: var(--primary-blue);"></i>
+            <h2 class="page-title">Atualizar Grupo de Bombeamento</h2>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="card card-custom">
+        <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-pencil-square me-2"></i>Edição de Grupo</span>
+            <a href="{{url_for('lista_grupos')}}" class="btn btn-secondary btn-sm" role="button" title="Voltar para a lista de grupos">
+                <i class="bi bi-arrow-left me-1"></i> Voltar
+            </a>
+        </div>
+        <div class="card-body">
+            {%- for mensagem in get_flashed_messages(category_filter=["error"]) %}
+            <div class="alert alert-danger d-flex align-items-center">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>{{mensagem}}
+            </div>
+            {%- endfor %}
+            <form action="{{url_for('atualiza_grupo', id=grupo.id)}}" method="POST">
+                {{ form.hidden_tag() }}
+                <div class="mb-3">
+                    <label class="form-label"><i class="bi bi-tag-fill"></i>{{ form.nome.label.text }}</label>
+                    {{ form.nome(class="form-control") }}
+                    {% if form.nome.errors %}
+                        <div class="alert alert-danger mt-1">
+                            {% for error in form.nome.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label"><i class="bi bi-card-text"></i>{{ form.descricao.label.text }}</label>
+                    {{ form.descricao(class="form-control", rows="4") }}
+                    {% if form.descricao.errors %}
+                        <div class="alert alert-danger mt-1">
+                            {% for error in form.descricao.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="form-actions">
+                    {{ form.submit(class="btn btn-submit") }}
+                    <a href="{{url_for('lista_grupos')}}" class="btn btn-cancel" role="button">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock conteudo %}

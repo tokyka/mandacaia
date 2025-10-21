@@ -1,0 +1,436 @@
+
+{% extends 'base.html' %}
+{% block conteudo %}
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .main-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            margin: 2rem auto;
+            padding: 2rem;
+        }
+
+        .header-section {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(30, 60, 114, 0.3);
+        }
+
+        .initialization-panel {
+            background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
+            border-radius: 15px;
+            padding: 1.5rem;
+            color: white;
+            box-shadow: 0 10px 25px rgba(116, 185, 255, 0.3);
+            margin-bottom: 2rem;
+        }
+
+        .report-card {
+            background: linear-gradient(135deg, #00b894 0%, #00a085 100%);
+            border-radius: 12px;
+            padding: 1.5rem;
+            color: white;
+            box-shadow: 0 8px 20px rgba(0, 184, 148, 0.3);
+            transition: transform 0.3s ease;
+            margin-bottom: 1.5rem;
+        }
+
+        .report-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .progress-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            backdrop-filter: blur(5px);
+        }
+
+        .progress-bar-custom {
+            background: linear-gradient(90deg, #00b894, #00a085);
+            border-radius: 10px;
+            height: 8px;
+            transition: width 0.5s ease;
+        }
+
+        .status-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .status-pending {
+            border-left-color: #f39c12;
+            background: rgba(243, 156, 18, 0.1);
+        }
+
+        .status-running {
+            border-left-color: #3498db;
+            background: rgba(52, 152, 219, 0.1);
+            animation: pulse 2s infinite;
+        }
+
+        .status-completed {
+            border-left-color: #27ae60;
+            background: rgba(39, 174, 96, 0.1);
+        }
+
+        .status-error {
+            border-left-color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+        }
+
+        .form-control-custom {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            color: white;
+            padding: 0.75rem 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .form-control-custom:focus {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.6);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25);
+            color: white;
+        }
+
+        .form-control-custom::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .btn-init {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            padding: 0.75rem 2rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3);
+        }
+
+        .btn-init:hover {
+            background: linear-gradient(135deg, #229954, #27ae60);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(39, 174, 96, 0.4);
+        }
+
+        .btn-init:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .summary-section {
+            background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
+            border-radius: 15px;
+            padding: 1.5rem;
+            color: white;
+            box-shadow: 0 10px 25px rgba(142, 68, 173, 0.3);
+            margin-top: 2rem;
+        }
+
+        .icon-status {
+            font-size: 1.2rem;
+            margin-right: 0.5rem;
+        }
+
+        .log-container {
+            background: #2c3e50;
+            border-radius: 8px;
+            padding: 1rem;
+            color: #ecf0f1;
+            font-family: 'Courier New', monospace;
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 1rem 0;
+        }
+
+        .log-entry {
+            margin: 0.25rem 0;
+            padding: 0.25rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .log-timestamp {
+            color: #95a5a6;
+            font-size: 0.9rem;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                margin: 1rem;
+                padding: 1rem;
+            }
+        }
+    </style>
+
+    <div class="container">
+        <div class="main-container animate-in">
+            <!-- Header -->
+            <div class="header-section">
+                <h1 class="mb-3">
+                    <i class="fas fa-database me-3"></i>
+                    Inicialização da Base de Dados
+                </h1>
+                <p class="mb-0 fs-5">Sistema de Configuração Inicial da Aplicação</p>
+            </div>
+
+            <div class="row">
+                <!-- Painel de Inicialização -->
+                <div class="col-lg-6">
+                    <div class="initialization-panel">
+                        <h4 class="mb-3">
+                            <i class="fas fa-cogs me-2"></i>
+                            Inicialização de Tabelas Essenciais
+                        </h4>
+
+                        <form id="initForm" method="POST" action="{{ url_for('initialize_database') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-init" id="initButton">
+                                    <i class="fas fa-play me-2"></i>
+                                    Inicializar Sistema
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Relatório de Progresso -->
+                <div class="col-lg-6">
+                    <div class="report-card">
+                        <h4 class="mb-3">
+                            <i class="fas fa-chart-line me-2"></i>
+                            Progresso da Inicialização
+                        </h4>
+
+                        <div class="progress-section">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Progresso Geral</span>
+                                <span id="progressPercent">{{ progress_percent or 0 }}%</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar progress-bar-custom" role="progressbar"
+                                     style="width: {{ progress_percent or 0 }}%"
+                                     aria-valuenow="{{ progress_percent or 0 }}"
+                                     aria-valuemin="0" aria-valuemax="100">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Status dos Componentes -->
+                        <div class="mt-3">
+                            <h6>Status dos Componentes:</h6>
+
+                            {% set init_steps = [
+                                {'name': 'Criação de Tabelas', 'key': 'tables', 'icon': 'fas fa-table'},
+                                {'name': 'Usuário Administrador', 'key': 'admin_user', 'icon': 'fas fa-user-shield'},
+                                {'name': 'Configuração LDAP', 'key': 'ldap_config', 'icon': 'fas fa-link'},
+                                {'name': 'Redes Padrão', 'key': 'default_networks', 'icon': 'fas fa-network-wired'},
+                                {'name': 'Grupos Padrão', 'key': 'default_groups', 'icon': 'fas fa-users'},
+                                {'name': 'Reservatórios', 'key': 'reservoirs', 'icon': 'fas fa-tint'}
+                            ] %}
+
+                            {% for step in init_steps %}
+                                {% set status = initialization_status.get(step.key, 'pending') if initialization_status else 'pending' %}
+                                <div class="status-item status-{{ status }}">
+                                    <i class="{{ step.icon }} icon-status"></i>
+                                    <span>{{ step.name }}</span>
+                                    {% if status == 'pending' %}
+                                        <i class="fas fa-clock text-warning float-end"></i>
+                                    {% elif status == 'running' %}
+                                        <i class="fas fa-spinner fa-spin text-info float-end"></i>
+                                    {% elif status == 'completed' %}
+                                        <i class="fas fa-check text-success float-end"></i>
+                                    {% elif status == 'error' %}
+                                        <i class="fas fa-times text-danger float-end"></i>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Log de Atividades -->
+            {% if initialization_log %}
+            <div class="row mt-4">
+                <div class="col-12">
+                    <div class="report-card">
+                        <h5 class="mb-3">
+                            <i class="fas fa-file-alt me-2"></i>
+                            Log de Atividades
+                        </h5>
+                        <div class="log-container">
+                            {% for log_entry in initialization_log %}
+                                <div class="log-entry">
+                                    <span class="log-timestamp">{{ log_entry.timestamp }}</span> -
+                                    <span class="text-{{ log_entry.level }}">{{ log_entry.message }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Resumo Final -->
+            {% if initialization_complete %}
+            <div class="summary-section">
+                <h4 class="mb-3">
+                    <i class="fas fa-flag-checkered me-2"></i>
+                    Resumo da Inicialização
+                </h4>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Componentes Criados:</h6>
+                        <ul class="list-unstyled">
+                            {% if summary %}
+                                {% for item in summary.created_items %}
+                                    <li><i class="fas fa-check text-success me-2"></i>{{ item }}</li>
+                                {% endfor %}
+                            {% endif %}
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Estatísticas:</h6>
+                        <ul class="list-unstyled">
+                            {% if summary %}
+                                <li><i class="fas fa-users me-2"></i>Usuários: {{ summary.users_count or 0 }}</li>
+                                <li><i class="fas fa-users-cog me-2"></i>Grupos: {{ summary.groups_count or 0 }}</li>
+                                <li><i class="fas fa-network-wired me-2"></i>Redes: {{ summary.networks_count or 0 }}</li>
+                                <li><i class="fas fa-tint me-2"></i>Reservatórios: {{ summary.reservoirs_count or 0 }}</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+
+                {% if initialization_complete %}
+                <div class="mt-3 text-center">
+                    <div class="alert alert-success d-inline-block">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <strong>Inicialização Concluída com Sucesso!</strong>
+                        <br>
+                        <small>Sistema pronto para uso. Tempo total: {{ total_time or 'N/A' }}</small>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('initForm');
+            const initButton = document.getElementById('initButton');
+            let isInitializing = false;
+
+            form.addEventListener('submit', function(e) {
+                if (isInitializing) {
+                    e.preventDefault();
+                    return;
+                }
+
+                isInitializing = true;
+                initButton.disabled = true;
+                initButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Inicializando...';
+
+                // Simular progresso (em uma implementação real, isso viria do servidor via AJAX)
+                simulateProgress();
+            });
+
+            function simulateProgress() {
+                let progress = 0;
+                const progressBar = document.querySelector('.progress-bar-custom');
+                const progressPercent = document.getElementById('progressPercent');
+
+                const interval = setInterval(() => {
+                    progress += Math.random() * 15;
+                    if (progress > 100) progress = 100;
+
+                    progressBar.style.width = progress + '%';
+                    progressPercent.textContent = Math.round(progress) + '%';
+
+                    if (progress >= 100) {
+                        clearInterval(interval);
+                    }
+                }, 500);
+            }
+
+            // Auto-refresh para acompanhar o progresso (se implementado no backend)
+            {% if initialization_in_progress %}
+            setInterval(() => {
+                fetch('{{ url_for("get_initialization_status") }}')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.completed) {
+                            location.reload();
+                        } else {
+                            updateProgress(data);
+                        }
+                    })
+                    .catch(error => console.error('Erro ao verificar status:', error));
+            }, 2000);
+            {% endif %}
+
+            function updateProgress(data) {
+                const progressBar = document.querySelector('.progress-bar-custom');
+                const progressPercent = document.getElementById('progressPercent');
+
+                progressBar.style.width = data.progress + '%';
+                progressPercent.textContent = data.progress + '%';
+
+                // Atualizar status dos componentes
+                Object.keys(data.status).forEach(key => {
+                    const statusElement = document.querySelector(`[data-step="${key}"]`);
+                    if (statusElement) {
+                        statusElement.className = `status-item status-${data.status[key]}`;
+                    }
+                });
+            }
+        });
+    </script>
+{% endblock conteudo %}

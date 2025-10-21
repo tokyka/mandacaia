@@ -1,0 +1,20 @@
+from app import app
+from app import db
+from flask import request, redirect, render_template, url_for
+from ..models import situacao_model, reservatorio_model, motobomba_model
+from ..services import init_db
+
+
+@app.route('/inicialize_base_de_dados', methods=["GET", "POST"])
+def init_database():
+    if request.method == 'GET':
+        situacoes = situacao_model.Situacao.query.all()
+        reservatorios = reservatorio_model.Tiporeservatorio.query.all()
+        tubos = motobomba_model.Tubospvc.query.all()
+        return render_template("inicie_basededados.html", situacoes=situacoes, reservatorios=reservatorios, tubos=tubos)
+
+    if request.method == 'POST':
+        init_db.populate_db()
+        return redirect(url_for('init_database'))
+
+    return "Inicializando base de dados ..."

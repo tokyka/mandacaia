@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+<style>
+    :root {
+        --primary-blue: #0066cc;
+        --secondary-cyan: #17a2b8;
+        --accent-teal: #20c997;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, #e3f2fd 0%, #b3e5fc 50%, #81d4fa 100%);
+        padding: 2.5rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 20px 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .page-title {
+        background: linear-gradient(135deg, var(--primary-blue), var(--secondary-cyan), var(--accent-teal));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 800;
+        font-size: 2.5rem;
+        margin: 0;
+    }
+
+    .card-custom {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+    }
+
+    .card-header-custom {
+        background: linear-gradient(90deg, var(--primary-blue) 0%, var(--secondary-cyan) 60%, var(--accent-teal) 100%);
+        color: white;
+        padding: 1.5rem;
+        font-weight: 600;
+        font-size: 1.2rem;
+    }
+
+    .btn-add-custom {
+        background: white;
+        color: var(--primary-blue);
+        border: 2px solid white;
+        font-weight: 600;
+        padding: 0.5rem 1.2rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-add-custom:hover {
+        background: var(--accent-teal);
+        color: white;
+        border-color: var(--accent-teal);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .table-custom {
+        margin: 0;
+    }
+
+    .table-custom thead {
+        background: linear-gradient(90deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+
+    .table-custom thead th {
+        color: #2c3e50;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+        padding: 1rem;
+        border-bottom: 3px solid var(--primary-blue);
+    }
+
+    .table-custom tbody tr {
+        transition: all 0.3s ease;
+    }
+
+    .table-custom tbody tr:hover {
+        background: linear-gradient(90deg, #f0f9ff 0%, #e0f2fe 100%);
+        transform: scale(1.01);
+        box-shadow: 0 2px 8px rgba(0, 102, 204, 0.1);
+    }
+
+    .table-custom tbody td {
+        padding: 1rem;
+        vertical-align: middle;
+        color: #495057;
+    }
+
+    .action-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        text-decoration: none;
+    }
+
+    .action-icon.edit:hover {
+        background-color: #d4edda;
+        transform: scale(1.1);
+    }
+
+    .action-icon.delete:hover {
+        background-color: #f8d7da;
+        transform: scale(1.1);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #6c757d;
+    }
+
+    .empty-state i {
+        font-size: 4rem;
+        color: var(--secondary-cyan);
+        margin-bottom: 1rem;
+    }
+</style>
+
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex align-items-center justify-content-center">
+            <i class="bi bi-collection-fill me-3" style="font-size: 2.5rem; color: var(--primary-blue);"></i>
+            <h2 class="page-title">Grupos de Bombeamento</h2>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="card card-custom">
+        <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-collection me-2"></i>Grupos Cadastrados</span>
+            <a href="{{url_for('novo_grupo')}}" class="btn btn-add-custom" role="button" title="Adicionar Grupo">
+                <i class="bi bi-plus-circle-fill me-2"></i>Novo Grupo
+            </a>
+        </div>
+        <div class="card-body p-0">
+            {% if grupos %}
+            <div class="table-responsive">
+                <table class="table table-custom table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col"><i class="bi bi-hash me-1"></i>Id</th>
+                            <th scope="col"><i class="bi bi-tag-fill me-1"></i>Nome</th>
+                            <th scope="col"><i class="bi bi-card-text me-1"></i>Descrição</th>
+                            <th scope="col" class="text-center"><i class="bi bi-gear me-1"></i>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for grupo in grupos %}
+                        <tr>
+                            <td><strong>{{grupo.id}}</strong></td>
+                            <td><strong>{{grupo.nome}}</strong></td>
+                            <td>{{grupo.descricao}}</td>
+                            <td class="text-center">
+                                <a href="{{url_for('atualiza_grupo', id=grupo.id)}}" class="action-icon edit me-2" role="button" title="Alterar Grupo">
+                                    <i class="bi bi-pencil-square text-success"></i>
+                                </a>
+                                <a href="{{url_for('remove_grupo', id=grupo.id)}}" class="action-icon delete" role="button" title="Excluir Grupo">
+                                    <i class="bi bi-trash-fill text-danger"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="bi bi-inbox"></i>
+                <h4>Nenhum grupo de bombeamento cadastrado</h4>
+                <p>Clique em "Novo Grupo" para adicionar o primeiro.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock conteudo %}

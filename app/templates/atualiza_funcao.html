@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% from 'includes/_formhelpers.html' import render_field %}
+{% block conteudo %}
+<style>
+    :root {
+        --primary-blue: #0066cc;
+        --secondary-cyan: #17a2b8;
+    }
+    .page-header {
+        background: linear-gradient(135deg, #e3f2fd 0%, #b3e5fc 100%);
+        padding: 2.5rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 20px 20px;
+    }
+    .page-title {
+        color: var(--primary-blue);
+        font-weight: 800;
+    }
+    .form-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .form-card-header {
+        background: linear-gradient(90deg, var(--primary-blue) 0%, var(--secondary-cyan) 100%);
+        color: white;
+        font-weight: 600;
+        padding: 1.5rem;
+    }
+</style>
+
+<div class="page-header">
+    <div class="container text-center">
+        <h2 class="page-title"><i class="bi bi-pencil-square me-3"></i>Atualizar Função de Registrador</h2>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card form-card">
+                <div class="card-header form-card-header">
+                    <i class="bi bi-joystick me-2"></i>Editando Função: {{ funcao.funcao }}
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('atualiza_funcao', id=funcao.id) }}">
+                        {{ form.csrf_token }}
+                        <div class="mb-3">
+                            {{ render_field(form.funcao) }}
+                        </div>
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('lista_funcoes') }}" class="btn btn-secondary">Cancelar</a>
+                            {{ form.submit(class='btn btn-primary') }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock conteudo %}

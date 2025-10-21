@@ -1,0 +1,48 @@
+from app import db
+from flask_wtf import FlaskForm
+from wtforms import StringField, IntegerField, SelectField, SubmitField, ValidationError
+from wtforms.validators import DataRequired, Length, NumberRange
+
+class ModbusSlave(db.Model):
+    __tablename__ = "modbus_slave"
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False)
+    nome = db.Column(db.String(80), nullable=False)
+    slave_id = db.Column(db.Integer, nullable=False, unique=True)
+    
+    registradores = db.relationship('ModbusRegister', backref='modbus_slave', lazy=True, cascade="all, delete-orphan")
+
+    def __init__(self, nome, slave_id):
+        self.nome = nome
+        self.slave_id = slave_id
+
+class ModbusRegister(db.Model):
+    __tablename__ = "modbus_register"
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False)
+    slave_id = db.Column(db.Integer, db.ForeignKey('modbus_slave.id'), nullable=False)
+    endereco = db.Column(db.Integer, nullable=False)
+    tipo = db.Column(db.String(30), nullable=False) # e.g., coil, holding_register
+    descricao = db.Column(db.String(120), nullable=True)
+
+    def __init__(self, slave_id, endereco, tipo, descricao=None):
+        self.slave_id = slave_id
+        self.endereco = endereco
+        self.tipo = tipo
+        self.descricao = descricao
+
+class ModbusSlaveForm(FlaskForm):
+    nome = StringField('Nome do Escravo', validators=[DataRequired(), Length(min=2, max=80)])
+    slave_id = IntegerField('ID do Escravo', validators=[DataRequired()])
+    submit = SubmitField('Salvar')
+
+    # def validate_slave_id(self, slave_id):
+    #     if ModbusSlave.query.filter_by(slave_id=slave_id.data).first():
+    #         raise ValidationError('Este ID de Escravo já está em uso. Por favor, escolha outro.')
+
+class ModbusRegisterForm(FlaskForm):
+    endereco = IntegerField('Endereço do Registrador', validators=[DataRequired()])
+    tipo = SelectField('Tipo de Registrador', choices=[('coil', 'Coil'), ('holding_register', 'Holding Register')], validators=[DataRequired()])
+    descricao = StringField('Descrição (Opcional)', validators=[Length(max=120)])
+    submit = SubmitField('Salvar Registrador')
+
+class DeleteForm(FlaskForm):
+    submit = SubmitField('Excluir')

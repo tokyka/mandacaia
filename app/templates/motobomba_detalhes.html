@@ -1,0 +1,274 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+<style>
+    :root {
+        --primary-blue: #0066cc;
+        --secondary-cyan: #17a2b8;
+        --accent-teal: #20c997;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, #e3f2fd 0%, #b3e5fc 50%, #81d4fa 100%);
+        padding: 2.5rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 20px 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .page-title {
+        background: linear-gradient(135deg, var(--primary-blue), var(--secondary-cyan), var(--accent-teal));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 800;
+        font-size: 2.5rem;
+        margin: 0;
+    }
+
+    .card-custom {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        background: rgba(255, 255, 255, 0.95);;
+        backdrop-filter: blur(10px);
+    }
+
+    .card-header-custom {
+        background: linear-gradient(90deg, var(--primary-blue) 0%, var(--secondary-cyan) 60%, var(--accent-teal) 100%);
+        color: white;
+        padding: 1.5rem;
+        font-weight: 600;
+        font-size: 1.2rem;
+        border-radius: 15px 15px 0 0;
+    }
+
+    .btn-submit, .btn-cancel {
+        font-weight: 600;
+        border: none;
+        padding: 0.6rem 1.4rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        min-width: 120px;
+    }
+
+    .btn-submit {
+        background: var(--primary-blue);
+        color: white;
+    }
+
+    .btn-submit:hover {
+        background: var(--accent-teal);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-cancel {
+        background: #f8d7da;
+        color: #721c24;
+        margin-left: 1rem;
+    }
+
+    .btn-cancel:hover {
+        background: #f5c6cb;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .form-label i {
+        margin-right: 0.5rem;
+        color: var(--primary-blue);
+    }
+
+    .form-row {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .form-row .form-group {
+        flex: 1;
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+
+    .list-group-item-action {
+        transition: all 0.3s ease;
+    }
+
+    .list-group-item-action:hover {
+        background-color: #e9ecef;
+        transform: translateX(5px);
+    }
+
+    .detail-item {
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        align-items: center;
+    }
+
+    .detail-item:last-child {
+        border-bottom: none;
+    }
+
+    .detail-item strong {
+        min-width: 150px;
+        color: var(--primary-blue);
+    }
+
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+        margin-top: 2rem;
+    }
+</style>
+
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex align-items-center justify-content-center">
+            <i class="bi bi-fuel-pump-fill me-3" style="font-size: 2.5rem; color: var(--primary-blue);"></i>
+            <h2 class="page-title">Detalhes da Motobomba: {{ motobomba.nome }}</h2>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="card card-custom">
+        <div class="card-header card-header-custom d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-info-circle-fill me-2"></i>Informações Detalhadas</span>
+            <a href="{{ url_for('configure_alertas_de_monitoramento') }}" class="btn btn-secondary btn-sm" role="button" title="Voltar ao Dashboard">
+                <i class="bi bi-arrow-left me-1"></i> Voltar
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="detail-item">
+                <strong><i class="bi bi-tag-fill me-1"></i>Nome:</strong> {{ motobomba.nome }}
+            </div>
+            <!-- Área para o gráfico de histórico de acionamentos -->
+            <div class="chart-container">
+                <canvas id="acionamentoChart"></canvas>
+            </div>
+            <h4 class="mt-4 mb-3"><i class="bi bi-graph-up me-2"></i>Histórico de Acionamentos</h4>
+            {% if acionamentos_historico %}
+            <div class="table-responsive">
+                <table class="table table-custom table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col">Data</th>
+                            <th scope="col">Hora Ligada</th>
+                            <th scope="col">Hora Desligada</th>
+                            <th scope="col">Tensão</th>
+                            <th scope="col">Corrente</th>
+                            <th scope="col">Potência</th>
+                            <th scope="col">Situação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for acionamento in acionamentos_historico %}
+                        <tr>
+                            <td>{{ acionamento.data }}</td>
+                            <td>{{ acionamento.hora_lig }}</td>
+                            <td>{{ acionamento.hora_des }}</td>
+                            <td>{{ acionamento.tensao }}</td>
+                            <td>{{ acionamento.corrente }}</td>
+                            <td>{{ acionamento.potencia }}</td>
+                            <td>{{ acionamento.situacao.situacao }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="bi bi-bar-chart-line"></i>
+                <h4>Nenhum histórico de acionamento disponível.</h4>
+                <p>Os dados de acionamento serão exibidos aqui.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const acionamentosHistorico = {{ acionamentos_historico | tojson }}; // Passar dados do Flask para JS
+
+        if (acionamentosHistorico && acionamentosHistorico.length > 0) {
+            const labels = acionamentosHistorico.map(ac => `${ac.data} ${ac.hora_lig}`);
+            const tensaoData = acionamentosHistorico.map(ac => ac.tensao);
+            const correnteData = acionamentosHistorico.map(ac => ac.corrente);
+            const potenciaData = acionamentosHistorico.map(ac => ac.potencia);
+
+            const ctx = document.getElementById('acionamentoChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Tensão (V)',
+                            data: tensaoData,
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            fill: true,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Corrente (A)',
+                            data: correnteData,
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            fill: true,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Potência (W)',
+                            data: potenciaData,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            fill: true,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Valores'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Data e Hora de Acionamento'
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            // Ocultar a área do gráfico se não houver dados
+            document.querySelector('.chart-container').style.display = 'none';
+        }
+    });
+</script>
+{% endblock conteudo %}
