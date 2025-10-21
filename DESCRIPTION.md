@@ -32,32 +32,32 @@ A arquitetura do projeto é dividida em três componentes principais:
 .
 ├── app/
 │   ├── models/
-│   │   ├── __init__.py
+│   │   ├── __init__.py             # Inicializa o módulo de modelos
 │   │   ├── regra_model.py          # Novo: Modelo para a tabela de Regras
 │   │   ├── condicao_model.py       # Novo: Modelo para a tabela de Condições
 │   │   ├── acao_model.py           # Novo: Modelo para a tabela de Ações
-│   │   ├── modbus_model.py         # Modelos existentes
-│   │   ├── reservatorio_model.py
-│   │   └── motobomba_model.py
-│   ├── services/
+│   │   ├── modbus_model.py         # Modelo para dispositivos e registradores Modbus
+│   │   ├── reservatorio_model.py   # Modelo para os reservatórios
+│   │   └── motobomba_model.py      # Modelo para as motobombas
+│   ├── services/                   # Lógica de negócios e serviços
 │   │   └── ...
-│   ├── static/
+│   ├── static/                     # Arquivos estáticos (CSS, JS, imagens)
 │   │   └── ...
-│   ├── templates/
+│   ├── templates/                  # Templates HTML (Jinja2)
 │   │   └── ...
-│   ├── views/
+│   ├── views/                      # Rotas e views da aplicação Flask
 │   │   └── ...
-│   ├── __init__.py                 # A ser atualizado para registrar os novos modelos
-│   ├── modbus_master.py            # A ser atualizado para usar o motor de regras
+│   ├── __init__.py                 # Inicializa a aplicação Flask
+│   ├── modbus_master.py            # Lógica do mestre Modbus
 │   └── ...
 ├── data/
 │   └── app.db                      # Banco de dados SQLite
-├── migrations/
+├── migrations/                     # Scripts de migração do banco de dados (Alembic)
 │   └── ...
-├── README.md
-├── DESCRIPTION.md                  # Este arquivo
-├── config.py
-├── modbus_slaves.py
-├── requirements.txt
+├── README.md                       # Documentação principal do projeto
+├── DESCRIPTION.md                  # Descrição detalhada do projeto e novas funcionalidades
+├── config.py                       # Configurações da aplicação
+├── modbus_slaves.py                # Simulador de escravos Modbus
+├── requirements.txt                # Dependências Python do projeto
 └── ...
 ```
