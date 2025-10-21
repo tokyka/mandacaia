@@ -23,13 +23,16 @@ from app.models import nivel_model
 from app.models import reservatorio_model
 from app.models import situacao_model
 from app.models import usuario_model
+from app.models import regra_model
+from app.models import condicao_model
+from app.models import acao_model
 from .views import login_view, acionamentos_view, reservatorio_view, motobomba_view, usuarios_view, nivel_view, index_view, monitoramento_view, modbus_view, grupo_bombeamento_view, funcao_registrador_view, database_view
 
 # Configuração de logging
 if not app.debug:
     if not os.path.exists('logs'):
         os.mkdir('logs')
-    file_handler = RotatingFileHandler('/home/carlos/python/mandacaia/logs/mandacaia.log', maxBytes=10240,
+    file_handler = RotatingFileHandler('logs/mandacaia.log', maxBytes=10240,
                                        backupCount=10)
     file_handler.setFormatter(logging.Formatter(
         '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
