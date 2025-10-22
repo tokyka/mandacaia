@@ -127,3 +127,4 @@ logs/
 
 # Custom
 data/db/
+migrations/
