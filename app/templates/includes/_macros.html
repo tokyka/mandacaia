@@ -1,0 +1,32 @@
+{% macro render_dynamic_field(field, prefix, index) %}
+<div class="form-section dynamic-form-item">
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <label class="form-label">{{ field.variavel.label if 'condicoes' in prefix else field.tipo_acao.label }}</label>
+            {{ field.variavel(class="form-select") if 'condicoes' in prefix else field.tipo_acao(class="form-select") }}
+        </div>
+        {% if 'condicoes' in prefix %}
+        <div class="col-md-3 mb-3">
+            <label class="form-label">{{ field.operador.label }}</label>
+            {{ field.operador(class="form-select") }}
+        </div>
+        <div class="col-md-3 mb-3">
+            <label class="form-label">{{ field.valor.label }}</label>
+            {{ field.valor(class="form-control") }}
+        </div>
+        {% else %}
+        <div class="col-md-4 mb-3">
+            <label class="form-label">{{ field.registrador_alvo.label }}</label>
+            {{ field.registrador_alvo(class="form-control") }}
+        </div>
+        <div class="col-md-2 mb-3">
+            <label class="form-label">{{ field.valor.label }}</label>
+            {{ field.valor(class="form-control") }}
+        </div>
+        {% endif %}
+        <div class="col-md-2 d-flex align-items-end mb-3">
+            <button type="button" class="btn btn-remove w-100" onclick="removeField(this, '{{ prefix }}')">-</button>
+        </div>
+    </div>
+</div>
+{% endmacro %}
