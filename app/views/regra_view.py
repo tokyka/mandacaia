@@ -4,6 +4,7 @@ from app.models.regra_model import Regra
 from app.models.condicao_model import Condicao
 from app.models.acao_model import Acao
 from app.models.regra_form import RegraForm
+from app.models.motobomba_model import Motobomba
 
 @app.route('/regras_modbus/')
 def listar_regras():
@@ -13,6 +14,10 @@ def listar_regras():
 @app.route('/regras_modbus/criar', methods=['GET', 'POST'])
 def criar_regra():
     form = RegraForm()
+    motobombas = Motobomba.query.all()
+    for acao_form in form.acoes:
+        acao_form.registrador_alvo.choices = [(mb.id, mb.nome) for mb in motobombas]
+
     if form.validate_on_submit():
         try:
             nova_regra = Regra(
@@ -30,9 +35,10 @@ def criar_regra():
                 nova_regra.condicoes.append(nova_condicao)
 
             for acao_form in form.acoes:
+                registrador_alvo = acao_form.registrador_alvo.data if acao_form.tipo_acao.data in ['Ligar_Motobomba', 'Desligar_Motobomba'] else acao_form.registrador_alvo_texto.data
                 nova_acao = Acao(
                     tipo_acao=acao_form.tipo_acao.data,
-                    registrador_alvo=acao_form.registrador_alvo.data,
+                    registrador_alvo=registrador_alvo,
                     valor=acao_form.valor.data
                 )
                 nova_regra.acoes.append(nova_acao)
@@ -51,6 +57,9 @@ def criar_regra():
 def editar_regra(regra_id):
     regra = Regra.query.get_or_404(regra_id)
     form = RegraForm(obj=regra)
+    motobombas = Motobomba.query.all()
+    for acao_form in form.acoes:
+        acao_form.registrador_alvo.choices = [(mb.id, mb.nome) for mb in motobombas]
 
     if form.validate_on_submit():
         try:
@@ -75,9 +84,10 @@ def editar_regra(regra_id):
                 db.session.add(nova_condicao)
 
             for acao_form in form.acoes:
+                registrador_alvo = acao_form.registrador_alvo.data if acao_form.tipo_acao.data in ['Ligar_Motobomba', 'Desligar_Motobomba'] else acao_form.registrador_alvo_texto.data
                 nova_acao = Acao(
                     tipo_acao=acao_form.tipo_acao.data,
-                    registrador_alvo=acao_form.registrador_alvo.data,
+                    registrador_alvo=registrador_alvo,
                     valor=acao_form.valor.data,
                     regra_id=regra.id
                 )

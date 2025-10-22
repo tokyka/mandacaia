@@ -153,7 +153,30 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('add-acao').addEventListener('click', function() {
         addField('acoes');
     });
+
+    // Initialize visibility for existing fields on page load
+    document.querySelectorAll('.dynamic-form-item').forEach(item => {
+        const tipoAcao = item.querySelector('select[name*="tipo_acao"]');
+        if (tipoAcao) {
+            toggleAlvoFields(tipoAcao);
+        }
+    });
 });
+
+function toggleAlvoFields(selectElement) {
+    const selectedValue = selectElement.value;
+    const formRow = selectElement.closest('.row');
+    const alvoSelect = formRow.querySelector('select[name*="registrador_alvo"]');
+    const alvoTextInput = formRow.querySelector('input[name*="registrador_alvo_texto"]');
+
+    if (selectedValue === 'Ligar_Motobomba' || selectedValue === 'Desligar_Motobomba') {
+        alvoSelect.style.display = 'block';
+        alvoTextInput.style.display = 'none';
+    } else {
+        alvoSelect.style.display = 'none';
+        alvoTextInput.style.display = 'block';
+    }
+}
 
 function addField(prefix) {
     const container = document.getElementById(prefix + '-container');

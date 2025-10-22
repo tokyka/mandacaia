@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, BooleanField, SelectField, FieldList, FormField, SubmitField
-from wtforms.validators import DataRequired, Length
+from wtforms.validators import DataRequired, Length, Optional
 
 class CondicaoForm(FlaskForm):
     """Sub-formulário para uma condição."""
@@ -34,7 +34,8 @@ class AcaoForm(FlaskForm):
         # Adicione outras ações conforme necessário
     ], validators=[DataRequired()])
     # O campo 'alvo' pode ser adicionado dinamicamente com JS se necessário
-    registrador_alvo = StringField('Alvo (opcional)', validators=[Length(max=100)])
+    registrador_alvo = SelectField('Alvo (opcional)', coerce=int, validators=[Optional()])
+    registrador_alvo_texto = StringField('Alvo (opcional)', validators=[Length(max=100)])
     valor = StringField('Valor (opcional)', validators=[Length(max=100)])
 
 class RegraForm(FlaskForm):
