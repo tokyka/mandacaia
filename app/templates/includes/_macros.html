@@ -3,7 +3,7 @@
     <div class="row">
         <div class="col-md-4 mb-3">
             <label class="form-label">{{ field.variavel.label if 'condicoes' in prefix else field.tipo_acao.label }}</label>
-            {{ field.variavel(class="form-select") if 'condicoes' in prefix else field.tipo_acao(class="form-select") }}
+            {{ field.variavel(class="form-select") if 'condicoes' in prefix else field.tipo_acao(class="form-select", onchange="toggleAlvoFields(this)") }}
         </div>
         {% if 'condicoes' in prefix %}
         <div class="col-md-3 mb-3">
@@ -17,7 +17,8 @@
         {% else %}
         <div class="col-md-4 mb-3">
             <label class="form-label">{{ field.registrador_alvo.label }}</label>
-            {{ field.registrador_alvo(class="form-control") }}
+            {{ field.registrador_alvo(class="form-select") }}
+            {{ field.registrador_alvo_texto(class="form-control") }}
         </div>
         <div class="col-md-2 mb-3">
             <label class="form-label">{{ field.valor.label }}</label>
