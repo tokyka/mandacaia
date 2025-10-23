@@ -3,22 +3,24 @@ from app import app, db
 from app.models.regra_model import Regra
 from app.models.condicao_model import Condicao
 from app.models.acao_model import Acao
-from app.models.regra_form import RegraForm
+from app.models.regra_form import RegraForm, AcaoForm
 from app.models.motobomba_model import Motobomba
 
-@app.route('/regras_modbus/')
+@app.route('/regras_modbus/lista')
 def listar_regras():
     regras = Regra.query.all()
-    return render_template('regras/lista.html', regras=regras, title='Lista de Regras')
+    return render_template('lista_regras.html', regras=regras, title='Lista de Regras')
 
 @app.route('/regras_modbus/criar', methods=['GET', 'POST'])
 def criar_regra():
-    form = RegraForm()
     motobombas = Motobomba.query.all()
-    for acao_form in form.acoes:
-        acao_form.registrador_alvo.choices = [(mb.id, mb.nome) for mb in motobombas]
+    motobomba_choices = [(mb.id, mb.nome) for mb in motobombas]
+    AcaoForm.registrador_alvo.kwargs = {'choices': motobomba_choices}
+    form = RegraForm()
 
     if form.validate_on_submit():
+        # Cleanup class modification
+        del AcaoForm.registrador_alvo.kwargs['choices']
         try:
             nova_regra = Regra(
                 nome=form.nome.data,
@@ -51,15 +53,21 @@ def criar_regra():
             db.session.rollback()
             flash(f'Erro ao criar a regra: {e}', 'danger')
 
-    return render_template('regras/editor.html', form=form, title='Criar Nova Regra')
+    # Cleanup class modification
+    if 'choices' in AcaoForm.registrador_alvo.kwargs:
+        del AcaoForm.registrador_alvo.kwargs['choices']
+    return render_template('editor_regras.html', form=form, title='Criar Nova Regra', action_url=url_for('criar_regra'))
 
 @app.route('/regras_modbus/editar/<int:regra_id>', methods=['GET', 'POST'])
 def editar_regra(regra_id):
     regra = Regra.query.get_or_404(regra_id)
-    form = RegraForm(obj=regra)
     motobombas = Motobomba.query.all()
-    for acao_form in form.acoes:
-        acao_form.registrador_alvo.choices = [(mb.id, mb.nome) for mb in motobombas]
+    motobomba_choices = [(mb.id, mb.nome) for mb in motobombas]
+    
+    # Hack to set choices on the nested form
+    AcaoForm.registrador_alvo.kwargs = {'choices': motobomba_choices}
+
+    form = RegraForm(obj=regra)
 
     if form.validate_on_submit():
         try:
@@ -67,31 +75,24 @@ def editar_regra(regra_id):
             regra.descricao = form.descricao.data
             regra.habilitada = form.habilitada.data
 
-            # Limpar condições e ações antigas
-            for condicao in regra.condicoes:
-                db.session.delete(condicao)
-            for acao in regra.acoes:
-                db.session.delete(acao)
+            # Clear existing collections before adding new ones
+            regra.condicoes = []
+            regra.acoes = []
+            db.session.flush() # Apply the clear operation
 
-            # Adicionar novas condições e ações
-            for condicao_form in form.condicoes:
-                nova_condicao = Condicao(
-                    variavel=condicao_form.variavel.data,
-                    operador=condicao_form.operador.data,
-                    valor=condicao_form.valor.data,
-                    regra_id=regra.id
-                )
-                db.session.add(nova_condicao)
+            for condicao_data in form.condicoes.data:
+                regra.condicoes.append(Condicao(**condicao_data))
 
-            for acao_form in form.acoes:
-                registrador_alvo = acao_form.registrador_alvo.data if acao_form.tipo_acao.data in ['Ligar_Motobomba', 'Desligar_Motobomba'] else acao_form.registrador_alvo_texto.data
-                nova_acao = Acao(
-                    tipo_acao=acao_form.tipo_acao.data,
-                    registrador_alvo=registrador_alvo,
-                    valor=acao_form.valor.data,
-                    regra_id=regra.id
-                )
-                db.session.add(nova_acao)
+            for acao_data in form.acoes.data:
+                if acao_data['tipo_acao'] in ['Ligar_Motobomba', 'Desligar_Motobomba']:
+                    acao_data['registrador_alvo'] = acao_data['registrador_alvo']
+                else:
+                    acao_data['registrador_alvo'] = acao_data['registrador_alvo_texto']
+                
+                if 'registrador_alvo_texto' in acao_data:
+                    del acao_data['registrador_alvo_texto']
+
+                regra.acoes.append(Acao(**acao_data))
 
             db.session.commit()
             flash('Regra atualizada com sucesso!', 'success')
@@ -99,25 +100,20 @@ def editar_regra(regra_id):
         except Exception as e:
             db.session.rollback()
             flash(f'Erro ao atualizar a regra: {e}', 'danger')
+        finally:
+            # Clean up the class-level kwargs
+            if 'choices' in AcaoForm.registrador_alvo.kwargs:
+                del AcaoForm.registrador_alvo.kwargs['choices']
+    else:
+        # For GET request or validation failure, ensure choices are set
+        for acao_form in form.acoes:
+            acao_form.registrador_alvo.choices = motobomba_choices
 
-    # Populating the form for GET request
-    if request.method == 'GET':
-        form.condicoes.entries = []
-        for condicao in regra.condicoes:
-            condicao_form = form.condicoes.append_entry()
-            condicao_form.variavel.data = condicao.variavel
-            condicao_form.operador.data = condicao.operador
-            condicao_form.valor.data = condicao.valor
+    # Cleanup for GET request if not submitting
+    if request.method == 'GET' and 'choices' in AcaoForm.registrador_alvo.kwargs:
+         del AcaoForm.registrador_alvo.kwargs['choices']
 
-        form.acoes.entries = []
-        for acao in regra.acoes:
-            acao_form = form.acoes.append_entry()
-            acao_form.tipo_acao.data = acao.tipo_acao
-            acao_form.registrador_alvo.data = acao.registrador_alvo
-            acao_form.valor.data = acao.valor
-
-
-    return render_template('regras/editor.html', form=form, title='Editar Regra', regra=regra)
+    return render_template('editor_regras.html', form=form, title='Editar Regra', regra=regra, action_url=url_for('editar_regra', regra_id=regra.id))
 
 @app.route('/regras_modbus/remover/<int:regra_id>', methods=['POST'])
 def remover_regra(regra_id):

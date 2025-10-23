@@ -1,37 +1,5 @@
 {% extends 'base.html' %}
-
-{% macro render_dynamic_field(field, prefix, index) %}
-<div class="form-section dynamic-form-item">
-    <div class="row">
-        <div class="col-md-4 mb-3">
-            <label class="form-label">{{ field.variavel.label if 'condicoes' in prefix else field.tipo_acao.label }}</label>
-            {{ field.variavel(class="form-select") if 'condicoes' in prefix else field.tipo_acao(class="form-select") }}
-        </div>
-        {% if 'condicoes' in prefix %}
-        <div class="col-md-3 mb-3">
-            <label class="form-label">{{ field.operador.label }}</label>
-            {{ field.operador(class="form-select") }}
-        </div>
-        <div class="col-md-3 mb-3">
-            <label class="form-label">{{ field.valor.label }}</label>
-            {{ field.valor(class="form-control") }}
-        </div>
-        {% else %}
-        <div class="col-md-4 mb-3">
-            <label class="form-label">{{ field.registrador_alvo.label }}</label>
-            {{ field.registrador_alvo(class="form-control") }}
-        </div>
-        <div class="col-md-2 mb-3">
-            <label class="form-label">{{ field.valor.label }}</label>
-            {{ field.valor(class="form-control") }}
-        </div>
-        {% endif %}
-        <div class="col-md-2 d-flex align-items-end mb-3">
-            <button type="button" class="btn btn-remove w-100" onclick="removeField(this, '{{ prefix }}')">-</button>
-        </div>
-    </div>
-</div>
-{% endmacro %}
+{% from 'includes/_macros.html' import render_dynamic_field %}
 
 {% block conteudo %}
 <style>
@@ -94,8 +62,8 @@
     .btn-add, .btn-remove {
         font-weight: 600;
         border-radius: 50%;
-        width: 38px;
-        height: 38px;
+        width: 32px;
+        height: 32px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -107,7 +75,7 @@
     }
 
     .btn-submit {
-        background: var(--primary-blue); 
+        background: var(--primary-blue);
         color: white;
         font-weight: 600;
         padding: 0.75rem 2rem;
@@ -124,14 +92,14 @@
 <div class="container mb-5">
     <div class="card card-custom">
         <div class="card-header card-header-custom">
-            <i class="bi bi-plus-circle-fill me-2"></i> Criar Nova Regra
+            <i class="bi bi-plus-circle-fill me-2"></i> {{ title }}
         </div>
         <div class="card-body p-4">
-            <form action="{{ url_for('criar_regra') }}" method="POST" id="regra-form">
+            <form action="{{ action_url or url_for('criar_regra') }}" method="POST" id="regra-form">
                 {{ form.hidden_tag() }}
 
                 <!-- Detalhes da Regra -->
-                <div class.form-section>
+                <div class="form-section">
                     <div class="mb-3">
                         <label class="form-label fw-bold">{{ form.nome.label }}</label>
                         {{ form.nome(class="form-control") }}
@@ -169,12 +137,24 @@
                 </div>
 
                 <div class="text-center mt-4">
+                    <a href="{{ url_for('listar_regras') }}" class="btn btn-secondary">Cancelar</a>
                     {{ form.submit(class="btn btn-submit") }}
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<!-- Templates for new fields -->
+<div id="condicao-template" style="display: none;">
+    {% set condicao_form = form.condicoes.append_entry().form %}
+    {{ render_dynamic_field(condicao_form, 'condicoes', '__prefix__') }}
+</div>
+<div id="acao-template" style="display: none;">
+    {% set acao_form = form.acoes.append_entry().form %}
+    {{ render_dynamic_field(acao_form, 'acoes', '__prefix__') }}
+</div>
+
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -185,14 +165,48 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('add-acao').addEventListener('click', function() {
         addField('acoes');
     });
+
+    // Initialize visibility for existing fields on page load
+    document.querySelectorAll('.dynamic-form-item').forEach(item => {
+        const tipoAcao = item.querySelector('select[name*="tipo_acao"]');
+        if (tipoAcao) {
+            toggleAlvoFields(tipoAcao);
+        }
+    });
 });
+
+function toggleAlvoFields(selectElement) {
+    const selectedValue = selectElement.value;
+    const formRow = selectElement.closest('.row');
+    const alvoSelect = formRow.querySelector('select[name*="registrador_alvo"]');
+    const alvoTextInput = formRow.querySelector('input[name*="registrador_alvo_texto"]');
+
+    if (selectedValue === 'Ligar_Motobomba' || selectedValue === 'Desligar_Motobomba') {
+        alvoSelect.style.display = 'block';
+        alvoTextInput.style.display = 'none';
+    } else {
+        alvoSelect.style.display = 'none';
+        alvoTextInput.style.display = 'block';
+    }
+}
 
 function addField(prefix) {
     const container = document.getElementById(prefix + '-container');
     const index = container.querySelectorAll('.dynamic-form-item').length;
-    const newField = document.createElement('div');
-    newField.innerHTML = `{{ render_dynamic_field(form.condicoes.append_entry().form if prefix == 'condicoes' else form.acoes.append_entry().form, prefix, 999) | replace('999', index) | replace('\n', '') | escape }}`. unescapeHTML();
-    container.appendChild(newField.firstElementChild);
+    const templateId = prefix === 'condicoes' ? 'condicao-template' : 'acao-template';
+    const template = document.getElementById(templateId).innerHTML;
+    const newFieldHTML = template.replace(/__prefix__/g, index);
+    
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = newFieldHTML;
+    const newField = tempDiv.firstElementChild;
+
+    container.appendChild(newField);
+
+    const tipoAcao = newField.querySelector('select[name*="tipo_acao"]');
+    if (tipoAcao) {
+        toggleAlvoFields(tipoAcao);
+    }
 }
 
 function removeField(button, prefix) {
@@ -208,13 +222,6 @@ function removeField(button, prefix) {
             input.id = name;
         });
     });
-}
-
-// Helper to decode HTML entities for the template string
-function unescapeHTML(html) {
-    var txt = document.createElement('textarea');
-    txt.innerHTML = html;
-    return txt.value;
 }
 </script>
 {% endblock %}

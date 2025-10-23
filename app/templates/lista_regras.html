@@ -46,6 +46,10 @@
         font-weight: 600;
         padding: 0.4em 0.8em;
     }
+    .action-btn-icon {
+        font-size: 0.9rem;
+        vertical-align: middle;
+    }
 </style>
 
 <div class="page-header">
@@ -99,10 +103,10 @@
                             </td>
                             <td class="text-center">
                                 <a href="{{ url_for('editar_regra', regra_id=regra.id) }}" class="btn btn-outline-primary btn-sm" title="Editar Regra">
-                                    <i class="bi bi-pencil-fill"></i>
+                                    <i class="bi bi-pencil-fill action-btn-icon"></i>
                                 </a>
                                 <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal{{ regra.id }}" title="Remover Regra">
-                                    <i class="bi bi-trash-fill"></i>
+                                    <i class="bi bi-trash-fill action-btn-icon"></i>
                                 </button>
                             </td>
                         </tr>
