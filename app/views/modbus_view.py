@@ -15,28 +15,31 @@ def lista_modbus():
     form = DeleteForm()
     return render_template("lista_modbus.html", slaves=slaves, form=form)
 
-@app.route("/modbus/novo", methods=["GET", "POST"])
-def novo_modbus():
+@app.route("/modbus/novo_dispositivo", methods=["GET", "POST"])
+def novo_dispositivo():
     form = ModbusDeviceForm()
 
     if form.validate_on_submit():
-        novo_slave = ModbusDevice(name=form.nome.data, slave_id=form.slave_id.data)
-        db.session.add(new_slave)
+        novo_slave = ModbusDevice(name=form.name.data, ip_address=form.ip_address.data, slave_id=form.slave_id.data, type=form.type.data, ativo=form.ativo.data)
+        db.session.add(novo_slave)
         db.session.commit() # Commit para obter o ID do novo escravo
 
         registradores_data = request.form.get('registradores_json')
         if registradores_data:
             import json
             registradores_list = json.loads(registradores_data)
+            tipo_to_fc_map = {'coil': 1, 'discrete_input': 2, 'holding_register': 3, 'input_register': 4}
+            rw_map = {'Read/Write': 'W', 'Read-Only': 'R'}
+
             for reg_data in registradores_list:
                 new_register = ModbusRegister(
-                    device_id=new_slave.id, # slave_id to device_id
-                    name="Placeholder Name", # New field - Frontend JSON structure needs update
-                    function_code=1, # Placeholder - Frontend JSON structure needs update
-                    address=reg_data['endereco'], # endereco to address
-                    data_type="int", # Placeholder - Frontend JSON structure needs update
-                    scale=1.0, # Placeholder - Frontend JSON structure needs update
-                    rw="R", # Placeholder - Frontend JSON structure needs update
+                    device_id=novo_slave.id,
+                    name=reg_data.get('name'),
+                    function_code=tipo_to_fc_map.get(reg_data.get('tipo')),
+                    address=reg_data.get('endereco'),
+                    data_type=reg_data.get('data_type', 'int'),
+                    scale=float(reg_data.get('scale', 1.0)),
+                    rw=rw_map.get(reg_data.get('acesso'), 'R'),
                     descricao=reg_data.get('descricao')
                 )
                 db.session.add(new_register)
@@ -45,37 +48,40 @@ def novo_modbus():
         flash("Escravo Modbus criado com sucesso!", "success")
         return redirect(url_for("lista_modbus"))
 
-    return render_template("novo_modbus.html", form=form)
+    return render_template("novo_dispositivo.html", form=form)
 
 @app.route("/modbus/atualiza/<int:id>", methods=["GET", "POST"])
 def atualiza_modbus(id):
     slave = ModbusDevice.query.get_or_404(id)
-    form = ModbusDeviceForm(obj=slave)
+    form = ModbusDeviceForm(original_slave_id=slave.slave_id, obj=slave)
     if form.validate_on_submit():
-        slave.name = form.nome.data
+        slave.name = form.name.data
+        slave.ip_address = form.ip_address.data
         slave.slave_id = form.slave_id.data
+        slave.type = form.type.data
+        slave.ativo = form.ativo.data
         
-        ModbusRegister.query.filter_by(device_id=slave.id).delete() # slave_id to device_id
+        ModbusRegister.query.filter_by(device_id=slave.id).delete()
         
         registradores_data = request.form.get('registradores_json')
         if registradores_data:
             import json
             registradores_list = json.loads(registradores_data)
+            tipo_to_fc_map = {'coil': 1, 'discrete_input': 2, 'holding_register': 3, 'input_register': 4}
+            rw_map = {'Read/Write': 'W', 'Read-Only': 'R'}
+
             for reg_data in registradores_list:
-                # Garantir que funcao_id não seja uma string vazia
-                # funcao_id = reg_data.get('funcao_id') # Removed
-                # if funcao_id: # Removed
-                    new_register = ModbusRegister(
-                        device_id=slave.id, # slave_id to device_id
-                        name="Placeholder Name", # New field - Frontend JSON structure needs update
-                        function_code=1, # Placeholder - Frontend JSON structure needs update
-                        address=reg_data['endereco'], # endereco to address
-                        data_type="int", # Placeholder - Frontend JSON structure needs update
-                        scale=1.0, # Placeholder - Frontend JSON structure needs update
-                        rw="R", # Placeholder - Frontend JSON structure needs update
-                        descricao=reg_data.get('descricao')
-                    )
-                    db.session.add(new_register)
+                new_register = ModbusRegister(
+                    device_id=slave.id,
+                    name=reg_data.get('name'),
+                    function_code=tipo_to_fc_map.get(reg_data.get('tipo')),
+                    address=reg_data.get('endereco'),
+                    data_type=reg_data.get('data_type', 'int'),
+                    scale=float(reg_data.get('scale', 1.0)),
+                    rw=rw_map.get(reg_data.get('acesso'), 'R'),
+                    descricao=reg_data.get('descricao')
+                )
+                db.session.add(new_register)
         
         db.session.commit()
         flash("Escravo Modbus atualizado com sucesso!", "success")
@@ -84,26 +90,34 @@ def atualiza_modbus(id):
         flash("Erro ao atualizar Escravo Modbus! Verifique os dados.", "danger")
 
     # Para o método GET, carregar os registradores existentes
+    fc_to_tipo_map = {1: 'coil', 2: 'discrete_input', 3: 'holding_register', 4: 'input_register'}
     registradores_existentes = [{
         'id': reg.id,
         'name': reg.name, # New field
         'function_code': reg.function_code, # New field
-        'address': reg.address, # endereco to address
+        'tipo': fc_to_tipo_map.get(reg.function_code),
+        'endereco': reg.address, # endereco to address
         'data_type': reg.data_type,
         'scale': reg.scale, # New field
         'rw': reg.rw, # acesso to rw
         'descricao': reg.descricao,
-    } for reg in slave.registradores]
+    } for reg in slave.registers]
     
     return render_template("atualiza_modbus.html", form=form, slave=slave, registradores_existentes=registradores_existentes)
 
 @app.route("/modbus/next_address")
 def next_modbus_address():
-    device_id = request.args.get('device_id', type=int) # slave_id to device_id
-    function_code = request.args.get('function_code', type=int) # register_type to function_code
+    device_id = request.args.get('slave_id', type=int)
+    register_type = request.args.get('type')
 
-    if not device_id or not function_code:
-        return jsonify({'error': 'Parâmetros device_id e function_code são obrigatórios'}), 400
+    if not device_id or not register_type:
+        return jsonify({'error': 'Parâmetros slave_id e type são obrigatórios'}), 400
+
+    tipo_to_fc_map = {'coil': 1, 'discrete_input': 2, 'holding_register': 3, 'input_register': 4}
+    function_code = tipo_to_fc_map.get(register_type)
+
+    if not function_code:
+        return jsonify({'error': 'Tipo de registrador inválido'}), 400
 
     # Mapeamento de function_code para sua faixa inicial (simplified for now)
     base_addresses = {
@@ -112,9 +126,6 @@ def next_modbus_address():
         3: 40001, # Holding Registers
         4: 30001  # Input Registers
     }
-
-    if function_code not in base_addresses:
-        return jsonify({'error': 'Código de função inválido'}), 400
 
     base_address = base_addresses[function_code]
     

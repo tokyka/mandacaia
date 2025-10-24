@@ -48,7 +48,7 @@ def criar_regra():
             db.session.add(nova_regra)
             db.session.commit()
             flash('Nova regra criada com sucesso!', 'success')
-            return redirect(url_for('listar_regras'))
+            return redirect(url_for('list_regras'))
         except Exception as e:
             db.session.rollback()
             flash(f'Erro ao criar a regra: {e}', 'danger')

@@ -229,10 +229,10 @@
                 </div>
 
                 <div class="mb-4">
-                    {{ form.nome.label(class="form-label") }}
+                    {{ form.name.label(class="form-label") }}
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-tag-fill"></i></span>
-                        {{ form.nome(class="form-control", placeholder="Ex: Sensor de Nível 01") }}
+                        {{ form.name(class="form-control", placeholder="Ex: Sensor de Nível 01") }}
                     </div>
                 </div>
 
@@ -244,6 +244,28 @@
                     </div>
                 </div>
 
+                <div class="row">
+                    <div class="col-md-6 mb-4">
+                        {{ form.ip_address.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-geo-alt-fill"></i></span>
+                            {{ form.ip_address(class="form-control", placeholder="Ex: 192.168.1.10 ou /dev/ttyUSB0") }}
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-4">
+                        {{ form.type.label(class="form-label") }}
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-hdd-stack-fill"></i></span>
+                            {{ form.type(class="form-select") }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4 form-check form-switch">
+                    {{ form.ativo(class="form-check-input") }}
+                    {{ form.ativo.label(class="form-check-label") }}
+                </div>
+
                 <h3 class="section-title">
                     <i class="bi bi-list-ul"></i>
                     Registradores
@@ -253,11 +275,12 @@
                     <table class="table table-registradores table-bordered mb-3" id="registradoresTable">
                         <thead>
                             <tr>
+                                <th style="width: 20%;"><i class="bi bi-tag-fill me-1"></i>Nome</th>
                                 <th style="width: 15%;"><i class="bi bi-pin-angle me-1"></i>Endereço</th>
                                 <th style="width: 15%;"><i class="bi bi-diagram-3 me-1"></i>Tipo</th>
                                 <th style="width: 10%;"><i class="bi bi-lock-fill me-1"></i>Acesso</th>
                                 <th style="width: 10%;"><i class="bi bi-rulers me-1"></i>Tamanho</th>
-                                <th style="width: 25%;"><i class="bi bi-joystick me-1"></i>Função</th>
+                                <th style="width: 15%;"><i class="bi bi-file-binary me-1"></i>Tipo de Dado</th>
                                 <th style="width: 15%;"><i class="bi bi-file-text me-1"></i>Descrição (Opcional)</th>
                                 <th style="width: 10%;" class="text-center"><i class="bi bi-gear me-1"></i>Ações</th>
                             </tr>
@@ -288,7 +311,6 @@
 <script>
     // Variáveis globais para os dados
     let registradores = [];
-    const funcoes = JSON.parse('{{ funcoes | tojson | safe }}');
 
     const registerTypeProperties = {
         'coil': { acesso: 'Read/Write', tamanho: '1 bit', range: [1, 9999] },
@@ -328,14 +350,6 @@
         return props.range[0]; // Retorna o início da faixa se não houver ou se o próximo sair da faixa
     }
 
-    function getFuncoesOptions(selectedFuncaoId) {
-        let options = '<option value="" disabled selected>Selecione...</option>';
-        funcoes.forEach(funcao => {
-            options += `<option value="${funcao.id}" ${funcao.id === selectedFuncaoId ? 'selected' : ''}>${funcao.funcao}</option>`;
-        });
-        return options;
-    }
-
     function renderRegistradores() {
         const registradoresTableBody = document.getElementById('registradoresTable').querySelector('tbody');
         registradoresTableBody.innerHTML = '';
@@ -343,7 +357,7 @@
         if (registradores.length === 0) {
             registradoresTableBody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="text-center text-muted py-4">
+                    <td colspan="8" class="text-center text-muted py-4">
                         <i class="bi bi-inbox" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
                         Nenhum registrador adicionado. Clique em "Adicionar Registrador" para começar.
                     </td>
@@ -358,6 +372,7 @@
             const validationClass = addressValid ? 'address-valid' : 'address-invalid';
 
             row.innerHTML = `
+                <td class="${validationClass}"><input type="text" class="form-control" value="${reg.name || ''}" onchange="updateRegistrador(${index}, 'name', this.value)" placeholder="Ex: Nível" required></td>
                 <td class="${validationClass}" ondblclick="resetAddress(${index})"><input type="number" class="form-control" value="${reg.endereco}" onchange="updateRegistrador(${index}, 'endereco', this.value)" required placeholder="0"></td>
                 <td class="${validationClass}">
                     <select class="form-select" onchange="updateRegistrador(${index}, 'tipo', this.value)">
@@ -370,8 +385,13 @@
                 <td class="${validationClass}"><span class="form-control-plaintext">${reg.acesso || ''}</span></td>
                 <td class="${validationClass}"><span class="form-control-plaintext">${reg.tamanho || ''}</span></td>
                 <td class="${validationClass}">
-                    <select class="form-select" onchange="updateRegistrador(${index}, 'funcao_id', this.value)" required>
-                        ${getFuncoesOptions(reg.funcao_id)}
+                    <select class="form-select" onchange="updateRegistrador(${index}, 'data_type', this.value)">
+                        <option value="int16" ${reg.data_type === 'int16' ? 'selected' : ''}>Integer 16-bit</option>
+                        <option value="uint16" ${reg.data_type === 'uint16' ? 'selected' : ''}>Unsigned Int 16-bit</option>
+                        <option value="int32" ${reg.data_type === 'int32' ? 'selected' : ''}>Integer 32-bit</option>
+                        <option value="uint32" ${reg.data_type === 'uint32' ? 'selected' : ''}>Unsigned Int 32-bit</option>
+                        <option value="float32" ${reg.data_type === 'float32' ? 'selected' : ''}>Float 32-bit</option>
+                        <option value="boolean" ${reg.data_type === 'boolean' ? 'selected' : ''}>Boolean</option>
                     </select>
                 </td>
                 <td class="${validationClass}"><input type="text" class="form-control" value="${reg.descricao || ''}" onchange="updateRegistrador(${index}, 'descricao', this.value)" placeholder="Anotações..."></td>
@@ -385,7 +405,7 @@
     }
 
     function updateRegistrador(index, field, value) {
-        if (field === 'endereco' || field === 'funcao_id') {
+        if (field === 'endereco') {
             registradores[index][field] = parseInt(value) || null;
         } else if (field === 'tipo') {
             registradores[index][field] = value;
@@ -414,11 +434,12 @@
         const nextAddress = findNextLocalAddress(defaultType);
 
         registradores.push({
+            name: '',
             endereco: nextAddress,
             tipo: defaultType,
             acesso: defaultProps.acesso,
             tamanho: defaultProps.tamanho,
-            funcao_id: null,
+            data_type: 'int16',
             descricao: ''
         });
         renderRegistradores();
@@ -433,13 +454,13 @@
 
         modbusSlaveForm.addEventListener('submit', function(event) {
             for (const reg of registradores) {
-                if (reg.endereco === '' || reg.endereco === null || isNaN(reg.endereco) || !isAddressValid(reg.tipo, reg.endereco)) {
-                    alert(`O endereço ${reg.endereco} é inválido para o tipo ${reg.tipo}.`);
+                if (!reg.name) {
+                    alert('O nome do registrador é obrigatório.');
                     event.preventDefault();
                     return;
                 }
-                if (!reg.funcao_id) {
-                    alert('Todos os registradores devem ter uma função selecionada.');
+                if (reg.endereco === '' || reg.endereco === null || isNaN(reg.endereco) || !isAddressValid(reg.tipo, reg.endereco)) {
+                    alert(`O endereço ${reg.endereco} é inválido para o tipo ${reg.tipo}.`);
                     event.preventDefault();
                     return;
                 }

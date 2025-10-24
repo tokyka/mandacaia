@@ -219,7 +219,7 @@
                 <i class="bi bi-pencil-square me-3" style="font-size: 2.5rem; color: var(--primary-blue);"></i>
                 <h2 class="page-title">Atualizar Escravo Modbus</h2>
             </div>
-            <p class="subtitle">{{ slave.nome }}</p>
+            <p class="subtitle">{{ slave.name }}</p>
         </div>
     </div>
 </div>
@@ -239,10 +239,10 @@
                 </div>
 
                 <div class="mb-4">
-                    {{ form.nome.label(class="form-label") }}
+                    {{ form.name.label(class="form-label") }}
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-tag-fill"></i></span>
-                        {{ form.nome(class="form-control", placeholder="Ex: Sensor de Nível 01") }}
+                        {{ form.name(class="form-control", placeholder="Ex: Sensor de Nível 01") }}
                     </div>
                 </div>
 
@@ -263,12 +263,12 @@
                     <table class="table table-registradores table-bordered mb-3" id="registradoresTable">
                         <thead>
                             <tr>
+                                <th style="width: 20%;"><i class="bi bi-tag-fill me-1"></i>Nome</th>
                                 <th style="width: 15%;"><i class="bi bi-pin-angle me-1"></i>Endereço</th>
                                 <th style="width: 15%;"><i class="bi bi-diagram-3 me-1"></i>Tipo</th>
                                 <th style="width: 10%;"><i class="bi bi-lock-fill me-1"></i>Acesso</th>
                                 <th style="width: 10%;"><i class="bi bi-rulers me-1"></i>Tamanho</th>
                                 <th style="width: 15%;"><i class="bi bi-file-binary me-1"></i>Tipo de Dado</th>
-                                <th style="width: 20%;"><i class="bi bi-joystick me-1"></i>Função</th>
                                 <th style="width: 15%;"><i class="bi bi-file-text me-1"></i>Descrição (Opcional)</th>
                                 <th style="width: 10%;" class="text-center"><i class="bi bi-gear me-1"></i>Ações</th>
                             </tr>
@@ -297,193 +297,356 @@
 </div>
 
 <script>
+
     // Variáveis globais para os dados
+
     let registradores = [];
-    const funcoes = JSON.parse('{{ funcoes | tojson | safe }}');
+
     const slaveId = {{ slave.id }};
 
+
+
     const registerTypeProperties = {
+
         'coil': { acesso: 'Read/Write', tamanho: '1 bit', range: [1, 9999] },
+
         'discrete_input': { acesso: 'Read-Only', tamanho: '1 bit', range: [10001, 19999] },
+
         'input_register': { acesso: 'Read-Only', tamanho: '16 bits', range: [30001, 39999] },
+
         'holding_register': { acesso: 'Read/Write', tamanho: '16 bits', range: [40001, 49999] }
+
     };
 
+
+
     function isAddressValid(tipo, endereco) {
+
         const props = registerTypeProperties[tipo];
+
         if (!props) return false;
+
         return endereco >= props.range[0] && endereco <= props.range[1];
+
     }
+
+
 
     function resetAddress(index) {
+
         const reg = registradores[index];
+
         const props = registerTypeProperties[reg.tipo];
+
         if (props) {
+
             reg.endereco = props.range[0]; // Reseta para o início da faixa
+
             renderRegistradores();
+
         }
+
     }
+
+
 
     function fetchNextAddress(index, tipo) {
+
         fetch(`/modbus/next_address?slave_id=${slaveId}&type=${tipo}`)
+
             .then(response => response.json())
+
             .then(data => {
+
                 if (data.next_address) {
+
                     registradores[index].endereco = data.next_address;
+
                     renderRegistradores();
+
                 }
+
             })
+
             .catch(error => console.error('Erro ao buscar próximo endereço:', error));
+
     }
 
-    function getFuncoesOptions(selectedFuncaoId) {
-        let options = '<option value="" disabled selected>Selecione...</option>';
-        funcoes.forEach(funcao => {
-            options += `<option value="${funcao.id}" ${funcao.id === selectedFuncaoId ? 'selected' : ''}>${funcao.funcao}</option>`;
-        });
-        return options;
-    }
+
 
     function renderRegistradores() {
+
         const registradoresTableBody = document.getElementById('registradoresTable').querySelector('tbody');
+
         registradoresTableBody.innerHTML = '';
 
+
+
         if (registradores.length === 0) {
+
             registradoresTableBody.innerHTML = `
+
                 <tr>
-                    <td colspan="7" class="text-center text-muted py-4">
+
+                    <td colspan="8" class="text-center text-muted py-4">
+
                         <i class="bi bi-inbox" style="font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
+
                         Nenhum registrador adicionado. Clique em "Adicionar Registrador" para começar.
+
                     </td>
+
                 </tr>
+
             `;
+
             return;
+
         }
+
+
 
         registradores.forEach((reg, index) => {
+
             const row = registradoresTableBody.insertRow();
+
             const addressValid = isAddressValid(reg.tipo, reg.endereco);
+
             const validationClass = addressValid ? 'address-valid' : 'address-invalid';
 
+
+
             row.innerHTML = `
+
+                <td class="${validationClass}"><input type="text" class="form-control" value="${reg.name || ''}" onchange="updateRegistrador(${index}, 'name', this.value)" placeholder="Ex: Nível" required></td>
+
                 <td class="${validationClass}" ondblclick="resetAddress(${index})"><input type="number" class="form-control" value="${reg.endereco}" onchange="updateRegistrador(${index}, 'endereco', this.value)" required placeholder="0"></td>
+
                 <td class="${validationClass}">
+
                     <select class="form-select" onchange="updateRegistrador(${index}, 'tipo', this.value)">
+
                         <option value="coil" ${reg.tipo === 'coil' ? 'selected' : ''}>Coil</option>
+
                         <option value="discrete_input" ${reg.tipo === 'discrete_input' ? 'selected' : ''}>Discrete Input</option>
+
                         <option value="input_register" ${reg.tipo === 'input_register' ? 'selected' : ''}>Input Register</option>
+
                         <option value="holding_register" ${reg.tipo === 'holding_register' ? 'selected' : ''}>Holding Register</option>
+
                     </select>
+
                 </td>
+
                 <td class="${validationClass}"><span class="form-control-plaintext">${reg.acesso || ''}</span></td>
+
                 <td class="${validationClass}"><span class="form-control-plaintext">${reg.tamanho || ''}</span></td>
-                <td class="${validationClass}">
-                    <select class="form-select" onchange="updateRegistrador(${index}, 'data_type', this.value)">
-                        <option value="int16" ${reg.data_type === 'int16' ? 'selected' : ''}>Integer 16-bit</option>
-                        <option value="uint16" ${reg.data_type === 'uint16' ? 'selected' : ''}>Unsigned Int 16-bit</option>
-                        <option value="int32" ${reg.data_type === 'int32' ? 'selected' : ''}>Integer 32-bit</option>
-                        <option value="uint32" ${reg.data_type === 'uint32' ? 'selected' : ''}>Unsigned Int 32-bit</option>
-                        <option value="float32" ${reg.data_type === 'float32' ? 'selected' : ''}>Float 32-bit</option>
-                        <option value="boolean" ${reg.data_type === 'boolean' ? 'selected' : ''}>Boolean</option>
-                    </select>
-                </td>
-                <td class="${validationClass}">
-                    <select class="form-select" onchange="updateRegistrador(${index}, 'funcao_id', this.value)" required>
-                        ${getFuncoesOptions(reg.funcao_id)}
-                    </select>
-                </td>
+
+                                                <td class="${validationClass}">
+
+                                                    <select class="form-select" onchange="updateRegistrador(${index}, 'data_type', this.value)">
+
+                                                        <option value="int16" ${reg.data_type === 'int16' ? 'selected' : ''}>Integer 16-bit</option>
+
+                                                        <option value="uint16" ${reg.data_type === 'uint16' ? 'selected' : ''}>Unsigned Int 16-bit</option>
+
+                                                        <option value="int32" ${reg.data_type === 'int32' ? 'selected' : ''}>Integer 32-bit</option>
+
+                                                        <option value="uint32" ${reg.data_type === 'uint32' ? 'selected' : ''}>Unsigned Int 32-bit</option>
+
+                                                        <option value="float32" ${reg.data_type === 'float32' ? 'selected' : ''}>Float 32-bit</option>
+
+                                                        <option value="boolean" ${reg.data_type === 'boolean' ? 'selected' : ''}>Boolean</option>
+
+                                                    </select>
+
+                                                </td>
+
                 <td class="${validationClass}"><input type="text" class="form-control" value="${reg.descricao || ''}" onchange="updateRegistrador(${index}, 'descricao', this.value)" placeholder="Anotações..."></td>
+
                 <td class="${validationClass} text-center">
+
                     <button type="button" class="btn btn-remove-register btn-sm" onclick="removeRegistrador(${index})" title="Remover registrador">
+
                         <i class="bi bi-trash-fill"></i>
+
                     </button>
+
                 </td>
+
             `;
+
         });
+
     }
+
+
 
     function updateRegistrador(index, field, value) {
+
         const originalAddress = registradores[index].endereco;
 
-        if (field === 'endereco' || field === 'funcao_id') {
+
+
+        if (field === 'endereco') {
+
             registradores[index][field] = parseInt(value) || null;
+
         } else if (field === 'tipo') {
+
             registradores[index][field] = value;
+
             const props = registerTypeProperties[value];
+
             if (props) {
+
                 registradores[index].acesso = props.acesso;
+
                 registradores[index].tamanho = props.tamanho;
+
             }
+
             if (!originalAddress || originalAddress === 0) {
+
                 fetchNextAddress(index, value);
+
             }
+
         } else {
+
             registradores[index][field] = value;
+
         }
+
         renderRegistradores();
+
     }
+
+
 
     function removeRegistrador(index) {
+
         if (confirm('Tem certeza que deseja remover este registrador?')) {
+
             registradores.splice(index, 1);
+
             renderRegistradores();
+
         }
+
     }
+
+
 
     function addRegistradorRow() {
+
         const defaultType = 'holding_register';
+
         const defaultProps = registerTypeProperties[defaultType];
+
         const newIndex = registradores.length;
+
         
+
         registradores.push({
+
+            name: '',
+
             endereco: 0, 
+
             tipo: defaultType,
+
             acesso: defaultProps.acesso,
+
             tamanho: defaultProps.tamanho,
+
             data_type: 'int16',
-            funcao_id: null,
+
             descricao: ''
+
         });
 
+
+
         fetchNextAddress(newIndex, defaultType);
+
         renderRegistradores();
+
     }
 
+
+
     document.addEventListener('DOMContentLoaded', function() {
+
         const addRegistradorBtn = document.getElementById('addRegistrador');
+
         const modbusSlaveForm = document.getElementById('modbusSlaveForm');
+
         const registradoresJsonInput = document.getElementById('registradoresJson');
 
+
+
         {% if registradores_existentes %}
+
             registradores = JSON.parse('{{ registradores_existentes | tojson | safe }}');
+
             registradores.forEach(reg => {
+
                 const props = registerTypeProperties[reg.tipo];
+
                 if (props) {
+
                     reg.acesso = props.acesso;
+
                     reg.tamanho = props.tamanho;
+
                 }
+
             });
+
         {% endif %}
+
+
 
         addRegistradorBtn.addEventListener('click', addRegistradorRow);
 
+
+
         modbusSlaveForm.addEventListener('submit', function(event) {
+
             for (const reg of registradores) {
+
+                if (!reg.name) {
+
+                    alert('O nome do registrador é obrigatório.');
+
+                    event.preventDefault();
+
+                    return;
+
+                }
+
                 if (reg.endereco === '' || reg.endereco === null || isNaN(reg.endereco) || reg.endereco <= 0) {
+
                     alert('O endereço do registrador é inválido. Deve ser um número maior que zero.');
+
                     event.preventDefault();
+
                     return;
+
                 }
-                if (!reg.funcao_id) {
-                    alert('Todos os registradores devem ter uma função selecionada.');
-                    event.preventDefault();
-                    return;
-                }
+
             }
+
             registradoresJsonInput.value = JSON.stringify(registradores);
+
         });
 
+
+
         renderRegistradores();
+
     });
+
 </script>
 {% endblock conteudo %}

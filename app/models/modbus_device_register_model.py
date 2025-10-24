@@ -1,6 +1,6 @@
 from app import db
 from flask_wtf import FlaskForm
-from wtforms import StringField, IntegerField, SelectField, SubmitField, ValidationError, BooleanField
+from wtforms import StringField, IntegerField, SelectField, SubmitField, ValidationError, BooleanField, FloatField
 from wtforms.validators import DataRequired, Length, NumberRange, Optional
 import sqlalchemy as sa
 
@@ -13,7 +13,7 @@ class ModbusDevice(db.Model):
     type = db.Column(sa.Enum('reservatorio', 'bomba', 'sensor', 'outro', name='device_type'), nullable=False)
     ativo = db.Column(sa.Boolean, nullable=False, default=True)
     
-    registers = db.relationship('ModbusRegister', backref='modbus_device', lazy=True, cascade="all, delete-orphan")
+    registers = db.relationship('ModbusRegister', back_populates='device', lazy=True, cascade="all, delete-orphan")
 
     def __init__(self, name, ip_address, slave_id, type, ativo=True):
         self.name = name
@@ -29,13 +29,13 @@ class ModbusRegister(db.Model):
     name = db.Column(db.String(100), nullable=False) # e.g., "Nível (%)", "Tensão (V)"
     function_code = db.Column(db.Integer, nullable=False) # Modbus function code (1, 2, 3, 4)
     address = db.Column(db.Integer, nullable=False)
-    data_type = db.Column(sa.Enum('int', 'float', 'bool', name='register_data_type'), nullable=False)
+    data_type = db.Column(db.String(20), nullable=False, default='int16')
     scale = db.Column(db.Float, nullable=False, default=1.0)
     rw = db.Column(sa.Enum('R', 'W', name='register_rw_type'), nullable=False) # Read/Write
     last_value = db.Column(db.Float, nullable=True) # Last read value, updated automatically
     descricao = db.Column(db.String(120), nullable=True)
 
-    device = db.relationship('ModbusDevice', backref=db.backref('modbus_registers', lazy='dynamic'))
+    device = db.relationship('ModbusDevice', back_populates='registers')
 
     def __init__(self, device_id, name, function_code, address, data_type, scale, rw, descricao=None):
         self.device_id = device_id
@@ -55,15 +55,27 @@ class ModbusDeviceForm(FlaskForm):
     ativo = BooleanField('Ativo', default=True)
     submit = SubmitField('Salvar Dispositivo')
 
+    def __init__(self, original_slave_id=None, *args, **kwargs):
+        super(ModbusDeviceForm, self).__init__(*args, **kwargs)
+        self.original_slave_id = original_slave_id
+
     def validate_slave_id(self, slave_id):
-        if ModbusDevice.query.filter_by(slave_id=slave_id.data).first():
-            raise ValidationError('Este ID de Escravo já está em uso. Por favor, escolha outro.')
+        if slave_id.data != self.original_slave_id:
+            if ModbusDevice.query.filter_by(slave_id=slave_id.data).first():
+                raise ValidationError('Este ID de Escravo já está em uso. Por favor, escolha outro.')
 
 class ModbusRegisterForm(FlaskForm):
     name = StringField('Nome do Registrador', validators=[DataRequired(), Length(min=2, max=100)])
     function_code = SelectField('Código de Função Modbus', coerce=int, choices=[(1, 'Coil (1)'), (2, 'Discrete Input (2)'), (3, 'Holding Register (3)'), (4, 'Input Register (4)')], validators=[DataRequired()])
     address = IntegerField('Endereço do Registrador', validators=[DataRequired(), NumberRange(min=0)])
-    data_type = SelectField('Tipo de Dado', choices=[('int', 'Inteiro'), ('float', 'Float'), ('bool', 'Booleano')], validators=[DataRequired()])
+    data_type = SelectField('Tipo de Dado', 
+                            choices=[('int16', 'Integer 16-bit'), 
+                                     ('uint16', 'Unsigned Int 16-bit'), 
+                                     ('int32', 'Integer 32-bit'), 
+                                     ('uint32', 'Unsigned Int 32-bit'), 
+                                     ('float32', 'Float 32-bit'), 
+                                     ('boolean', 'Boolean')], 
+                            validators=[DataRequired()])
     scale = FloatField('Fator de Escala', validators=[DataRequired()])
     rw = SelectField('Acesso', choices=[('R', 'Leitura'), ('W', 'Escrita')], validators=[DataRequired()])
     descricao = StringField('Descrição (Opcional)', validators=[Length(max=120)])
