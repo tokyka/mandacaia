@@ -1,0 +1,173 @@
+🎯 OBJETIVO
+
+Permitir que o usuário configure:
+- Dispositivos (slaves Modbus);
+- Condições (baseadas em níveis, tensão, corrente, etc.);
+- Ações (ligar/desligar bombas, enviar alarmes, etc.);
+- Lógicas compostas (condições e ações encadeadas).
+
+Tudo isso de forma parametrizável via interface web, sem editar o código-fonte.
+
+---
+
+🧩 ARQUITETURA GERAL
+
+A aplicação será dividida em 4 camadas principais:
+
+1. Camada de Comunicação Modbus
+   - Responsável por ler e escrever valores dos registradores Modbus (input, holding, coil, discrete input).
+   - Funciona de forma genérica, com base nas configurações de banco de dados (sem hardcode).
+
+2. Camada de Configuração Dinâmica
+   - Define via banco de dados todos os slaves, registradores, condições e ações.
+
+3. Motor de Regras (Rule Engine)
+   - Executa periodicamente (ex: a cada 1 segundo).
+   - Avalia as condições e dispara ações de acordo com as regras configuradas.
+
+4. Interface Web
+   - Permite ao usuário:
+     - Cadastrar dispositivos Modbus;
+     - Mapear registradores;
+     - Criar condições (comparações);
+     - Definir ações;
+     - Criar regras com "SE ... ENTÃO ..." de forma visual/intuitiva.
+
+---
+
+🧠 FLUXO LÓGICO DE OPERAÇÃO
+
+1. A thread principal percorre a tabela de slaves configurados.
+2. Lê os valores definidos nos registradores de entrada.
+3. Atualiza os valores atuais no banco de dados.
+4. O motor de regras analisa as condições:
+   - Exemplo: “reservatório acumulação nível > 20%” e “reservatório distribuição ≤ 20%”.
+5. Se a condição for verdadeira, executa a ação associada:
+   - Exemplo: “Ligar motobomba 1”.
+6. A ação é traduzida em comando Modbus para o slave correspondente.
+7. O sistema registra logs e continua o ciclo.
+
+---
+
+🗄️ ESTRUTURA DE BANCO DE DADOS
+
+1. devices – Dispositivos Modbus
+----------------------------------
+| Campo | Tipo | Descrição |
+|-------|------|------------|
+| id | INT (PK) | Identificador do dispositivo |
+| name | VARCHAR | Nome (ex: "Reservatório Acumulação") |
+| ip_address | VARCHAR | Endereço IP Modbus TCP ou serial ID |
+| slave_id | INT | ID do slave Modbus |
+| type | ENUM('reservatorio','bomba','sensor','outro') | Tipo do dispositivo |
+| ativo | BOOLEAN | Se está ativo no sistema |
+
+2. registers – Registradores Modbus
+-----------------------------------
+| Campo | Tipo | Descrição |
+|-------|------|------------|
+| id | INT (PK) | Identificador |
+| device_id | INT (FK → devices.id) | Dispositivo associado |
+| name | VARCHAR | Nome (ex: "Nível (%)", "Tensão (V)") |
+| function_code | INT | Código Modbus (1, 2, 3, 4) |
+| address | INT | Endereço do registrador |
+| data_type | ENUM('int','float','bool') | Tipo de dado |
+| scale | FLOAT | Fator de escala (ex: 0.1, 1.0) |
+| rw | ENUM('R','W') | Leitura/Escrita |
+| last_value | FLOAT | Último valor lido (atualizado automaticamente) |
+
+3. conditions – Condições Lógicas
+---------------------------------
+| Campo | Tipo | Descrição |
+|-------|------|------------|
+| id | INT (PK) | Identificador |
+| name | VARCHAR | Nome da condição |
+| left_register_id | INT (FK → registers.id) | Registrador a comparar |
+| operator | ENUM('>','<','>=','<=','==','!=') | Operador lógico |
+| right_value | FLOAT | Valor de comparação ou ID de outro registrador |
+| right_is_register | BOOLEAN | Se o valor à direita vem de outro registrador |
+| description | TEXT | Descrição opcional |
+
+Exemplo:
+> Se “reservatório distribuição nível (%) <= 20%”.
+
+4. actions – Ações a Executar
+-----------------------------
+| Campo | Tipo | Descrição |
+|-------|------|------------|
+| id | INT (PK) | Identificador |
+| name | VARCHAR | Nome da ação |
+| target_register_id | INT (FK → registers.id) | Registrador Modbus a escrever |
+| write_value | FLOAT | Valor a escrever (ex: 1 = ligar, 0 = desligar) |
+| description | TEXT | Descrição opcional |
+
+Exemplo:
+> “Ligar bomba 1” = escrever 1 no registrador coil da bomba.
+
+5. rules – Regras Completas
+----------------------------
+| Campo | Tipo | Descrição |
+|-------|------|------------|
+| id | INT (PK) | Identificador |
+| name | VARCHAR | Nome da regra |
+| condition_id | INT (FK → conditions.id) | Condição associada |
+| action_id | INT (FK → actions.id) | Ação associada |
+| priority | INT | Prioridade (para resolver conflitos) |
+| enabled | BOOLEAN | Ativo/inativo |
+| stop_on_trigger | BOOLEAN | Se deve parar após acionar uma vez (ex: histerese) |
+
+Exemplo:
+> “SE nível acumulação > 20% E nível distribuição ≤ 20% ENTÃO ligar bomba 1.”
+
+6. rule_logs – Histórico de Execução
+------------------------------------
+| Campo | Tipo | Descrição |
+|-------|------|------------|
+| id | INT (PK) | Identificador |
+| rule_id | INT (FK → rules.id) | Regra executada |
+| timestamp | DATETIME | Data/hora da execução |
+| condition_result | BOOLEAN | Resultado da condição |
+| action_executed | BOOLEAN | Se a ação foi disparada |
+
+---
+
+⚙️ MOTOR DE REGRAS (RULE ENGINE)
+
+- Executa ciclicamente (por ex. a cada 500 ms).
+- Para cada rule ativa:
+  1. Avalia a condition.
+  2. Se verdadeira, aciona a action.
+  3. Registra log (rule_logs).
+- Implementa histerese para evitar liga/desliga rápido.
+- Possibilidade de grupos de regras (revezamento de bombas).
+
+---
+
+🌐 INTERFACE WEB (SUGESTÃO DE FUNCIONALIDADE)
+
+- Página “Dispositivos”:
+  - Cadastrar e editar slaves Modbus.
+  - Adicionar registradores (endereços e tipos).
+
+- Página “Regras” (editor visual):
+  - Exemplo de regra:
+    [Reservatório Acumulação: Nível %] > [20]
+    E
+    [Reservatório Distribuição: Nível %] <= [20]
+    ENTÃO
+    [Bomba 1: Liga]
+
+- Página “Monitoramento”:
+  - Exibe níveis em tempo real.
+  - Mostra status das bombas.
+  - Logs das últimas ações.
+
+---
+
+🧰 VANTAGENS DA ARQUITETURA PROPOSTA
+
+✅ Totalmente configurável via banco e interface  
+✅ Permite adicionar novos slaves, sensores e bombas sem alterar código  
+✅ Escalável — suporta múltiplos reservatórios e bombas  
+✅ Base para futura automação avançada (regras compostas, scripts, etc.)  
+✅ Ideal para ser distribuído (vários nós lendo Modbus e um servidor central processando)

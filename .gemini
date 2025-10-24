@@ -1,0 +1,17 @@
+O usuário prefere que a comunicação seja em português.
+
+O projeto Mandacaia é um sistema de monitoramento e controle de motobombas e reservatórios de água, desenvolvido em Python com Flask e SQLAlchemy. O banco de dados utilizado é o MariaDB.
+
+O projeto possui as seguintes funcionalidades:
+* Gerenciamento de usuários com senhas seguras (hash com salt).
+* Monitoramento de reservatórios e níveis de água.
+* Controle e monitoramento de motobombas.
+* Registro de acionamentos.
+
+Estrutura do projeto:
+* `app/`: Contém a aplicação Flask.
+* `app/models/`: Contém os modelos do banco de dados.
+* `app/views/`: Contém as views da aplicação.
+* `app/services/`: Contém a lógica de negócio da aplicação.
+* `app/templates/`: Contém os templates HTML da aplicação.
+* `config.py`: Arquivo de configuração.

@@ -1,0 +1,111 @@
+1. Visão Geral do Sistema
+
+O sistema será composto por:
+
+    Slaves Modbus configuráveis: cada dispositivo (reservatório, bomba, sensor) será descrito em banco de dados.
+
+    Regras de controle configuráveis: o usuário poderá definir condições e ações via interface web.
+
+    Motor de execução: uma thread que interpreta as regras e executa ações com base nos dados dos slaves.
+
+    Interface web: para cadastrar dispositivos, definir regras e monitorar o sistema.
+
+2. Estrutura de Banco de Dados
+
+Tabela: devices
+id             : int (PK)         → Identificador único
+name           : string           → Nome do dispositivo (ex: Motobomba 1)
+slave_address  : int              → Endereço Modbus RTU
+type           : string           → Tipo (reservatorio, bomba, sensor, etc.)
+active         : boolean          → Se está ativo no sistema
+
+Tabela: registers
+id             : int (PK)         → Identificador único
+device_id      : int (FK)         → Referência ao devices.id
+name           : string           → Nome da função (ex: nível, tensão)
+register_type  : string           → Tipo (coil, input_register, holding_register, etc.)
+address        : int              → Endereço do registrador
+data_type      : string           → Tipo de dado (float32, boolean, etc.)
+unit           : string           → Unidade de medida
+
+Tabela: rules
+id             : int (PK)         → Identificador único
+name           : string           → Nome da regra
+description    : text             → Descrição textual
+active         : boolean          → Se está habilitada
+
+Tabela: conditions
+id             : int (PK)         → Identificador único
+rule_id        : int (FK)         → Referência à rules.id
+device_id      : int (FK)         → Dispositivo a ser lido
+register_id    : int (FK)         → Registrador a ser avaliado
+operator       : string           → Operador lógico (>, <, >=, <=, ==, !=)
+value          : float            → Valor de comparação
+logic_group    : string           → Grupo lógico (ex: "A", "B") para OR/AND
+
+Tabela: actions
+id             : int (PK)         → Identificador único
+rule_id        : int (FK)         → Referência à rules.id
+device_id      : int (FK)         → Dispositivo a ser escrito
+register_id    : int (FK)         → Registrador a ser alterado
+value          : float / boolean  → Valor a ser escrito
+trigger_type   : string           → Tipo de ação ('start', 'stop', 'set', etc.)
+
+
+3. Exemplo de Regra Configurada
+
+Nome: Transferência de água entre reservatórios
+
+Condições de acionamento:
+
+    Reservatório Acumulação → nível > 20%
+
+    Reservatório Distribuição → nível ≤ 20%
+
+Ação:
+
+    Ligar Motobomba 1 (coil = True)
+
+Condições de parada:
+
+    Reservatório Distribuição → volume ≥ 100%
+
+    OU Reservatório Acumulação → nível < 20%
+
+4. Interface Web
+
+Funcionalidades que o usuário poderá acessar:
+
+    Cadastro de dispositivos e registradores
+
+    Criação e edição de regras com múltiplas condições e ações
+
+    Monitoramento em tempo real dos valores lidos
+
+    Histórico de execuções e logs
+
+5. Motor de Execução
+
+A thread principal do controlador:
+
+    Carrega dispositivos e registradores ativos
+
+    Avalia todas as regras ativas
+
+    Agrupa condições por lógica (AND/OR)
+
+    Verifica se todas as condições estão satisfeitas
+
+    Executa ações associadas
+
+    Monitora condições de parada
+
+    Repete em intervalo configurável
+
+6. Segurança e Validação
+
+    Validação de tipos de dados e limites de registradores
+
+    Logs de leitura/escrita para auditoria
+
+    Controle de acesso à interface web
