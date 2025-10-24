@@ -1,6 +1,7 @@
 from app import app, db
 from flask import request, redirect, render_template, url_for, flash
-from ..models import modbus_model, reservatorio_model
+from ..models import reservatorio_model
+from ..models.modbus_device_register_model import ModbusDevice
 from ..models.motobomba_model import Motobomba, MotobombaForm, GrupoBombeamento, FuncaoBomba, StatusRotacao, Tubospvc, TensaoTrabalho
 
 def _populate_form_choices(form):
@@ -11,8 +12,8 @@ def _populate_form_choices(form):
     form.recalque.choices = [(str(t.id), t.pol) for t in tubos]
 
     # Popula slaves
-    slaves = modbus_model.ModbusSlave.query.all()
-    form.modbus_slave_id.choices = [(s.id, s.nome) for s in slaves]
+    slaves = ModbusDevice.query.all()
+    form.modbus_slave_id.choices = [(s.id, s.name) for s in slaves]
     form.modbus_slave_id.choices.insert(0, (0, 'Nenhum'))
 
     # Popula reservatórios

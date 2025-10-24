@@ -2,7 +2,7 @@ from app import app, db
 from flask import request, redirect, render_template, url_for, flash
 from ..models import reservatorio_model
 from ..models.reservatorio_model import ReservatorioForm
-from ..models.modbus_model import ModbusSlave  # Importar ModbusSlave
+from ..models.modbus_device_register_model import ModbusDevice # Importar ModbusDevice
 
 @app.route('/reservatorios/lista_reservatorios')
 def list_tanks():
@@ -16,8 +16,8 @@ def new_tank():
     form = ReservatorioForm()
     # Popula as opções do SelectField dinamicamente
     form.tipo.choices = [(t.id, t.tipo) for t in reservatorio_model.Tiporeservatorio.query.all()]
-    slaves = ModbusSlave.query.all()
-    form.modbus_slave_id.choices = [(s.id, s.nome) for s in slaves]
+    slaves = ModbusDevice.query.all()
+    form.modbus_slave_id.choices = [(s.id, s.name) for s in slaves]
     form.modbus_slave_id.choices.insert(0, (0, 'Nenhum')) # Adicionar opção para nenhum slave
 
     if form.validate_on_submit():
@@ -47,8 +47,8 @@ def update_tank(id):
     
     # Popula as opções do SelectField dinamicamente
     form.tipo.choices = [(t.id, t.tipo) for t in reservatorio_model.Tiporeservatorio.query.all()]
-    slaves = ModbusSlave.query.all()
-    form.modbus_slave_id.choices = [(s.id, s.nome) for s in slaves]
+    slaves = ModbusDevice.query.all()
+    form.modbus_slave_id.choices = [(s.id, s.name) for s in slaves]
     form.modbus_slave_id.choices.insert(0, (0, 'Nenhum'))
 
     if form.validate_on_submit():

@@ -13,20 +13,21 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 csrf = CSRFProtect(app)
 
-from app.models import acionamento_model
-from app.models import alerta_config_model
-from app.models import modbus_data_model
-from app.models import modbus_model
-from app.models import motobomba_alerta_config_model
-from app.models import motobomba_model
-from app.models import nivel_model
-from app.models import reservatorio_model
-from app.models import situacao_model
-from app.models import usuario_model
-from app.models import regra_model
-from app.models import condicao_model
-from app.models import acao_model
-from .views import login_view, acionamentos_view, reservatorio_view, motobomba_view, usuarios_view, nivel_view, index_view, monitoramento_view, modbus_view, grupo_bombeamento_view, funcao_registrador_view, database_view, regra_view
+from app.models.acionamento_model import Acionamento
+from app.models.alerta_config_model import AlertaConfig
+from app.models.modbus_data_model import ModbusData
+from app.models.modbus_device_register_model import ModbusDevice, ModbusRegister
+from app.models.motobomba_alerta_config_model import MotobombaAlertaConfig
+from app.models.motobomba_model import Motobomba
+from app.models.nivel_model import Nivel
+from app.models.reservatorio_model import Reservatorio
+from app.models.situacao_model import Situacao
+from app.models.usuario_model import Usuario
+from app.models.modbus_rule_model import ModbusRule
+from app.models.modbus_condition_model import ModbusCondition
+from app.models.modbus_action_model import ModbusAction
+from app.models.modbus_rule_log_model import ModbusRuleLog
+from .views import login_view, acionamentos_view, reservatorio_view, motobomba_view, usuarios_view, nivel_view, index_view, monitoramento_view, modbus_view, grupo_bombeamento_view, database_view, regra_view
 
 # Configuração de logging
 if not app.debug:

@@ -23,8 +23,8 @@ class Reservatorio(db.Model):
     alertas_config = db.relationship('AlertaConfig', cascade='all, delete-orphan', lazy=True, backref='reservatorio')
 
     # Relacionamento com ModbusSlave
-    modbus_slave_id = db.Column(db.Integer, db.ForeignKey('modbus_slave.id'), nullable=True)
-    modbus_slave = db.relationship('ModbusSlave', backref='reservatorios')
+    modbus_slave_id = db.Column(db.Integer, db.ForeignKey('modbus_device.id'), nullable=True)
+    modbus_slave = db.relationship('ModbusDevice', backref='reservatorios')
 
     def __init__(self, nome, descricao, capacidade_maxima, tipos, modbus_slave_id=None): # Atualizado __init__
         self.nome = nome

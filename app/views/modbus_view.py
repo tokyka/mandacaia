@@ -1,31 +1,26 @@
 from app import app, db
 from flask import render_template, redirect, url_for, flash, request, jsonify
-from ..models.modbus_model import ModbusSlave, ModbusSlaveForm, ModbusRegister, DeleteForm
-from ..models.funcao_registrador_model import FuncaoRegistrador # Importar o novo modelo
+from ..models.modbus_device_register_model import ModbusDevice, ModbusRegister, ModbusDeviceForm, ModbusRegisterForm, DeleteForm
+ # Importar o novo modelo
 
 @app.route("/modbus/status")
 def status():
     """Exibe o status mais recente de todos os slaves, lido do banco de dados."""
-    slaves = ModbusSlave.query.order_by(ModbusSlave.slave_id).all()
+    slaves = ModbusDevice.query.order_by(ModbusDevice.slave_id).all()
     return render_template("modbus_status.html", slaves=slaves)
 
 @app.route("/modbus/lista")
 def lista_modbus():
-    slaves = ModbusSlave.query.all()
+    slaves = ModbusDevice.query.all()
     form = DeleteForm()
     return render_template("lista_modbus.html", slaves=slaves, form=form)
 
 @app.route("/modbus/novo", methods=["GET", "POST"])
 def novo_modbus():
-    form = ModbusSlaveForm()
-    funcoes = FuncaoRegistrador.query.all()
-    funcoes_serializable = [{'id': f.id, 'funcao': f.funcao} for f in funcoes] # Serializar FuncaoRegistrador
+    form = ModbusDeviceForm()
 
     if form.validate_on_submit():
-        new_slave = ModbusSlave(
-            nome=form.nome.data,
-            slave_id=form.slave_id.data
-        )
+        novo_slave = ModbusDevice(name=form.nome.data, slave_id=form.slave_id.data)
         db.session.add(new_slave)
         db.session.commit() # Commit para obter o ID do novo escravo
 
@@ -35,12 +30,13 @@ def novo_modbus():
             registradores_list = json.loads(registradores_data)
             for reg_data in registradores_list:
                 new_register = ModbusRegister(
-                    slave_id=new_slave.id,
-                    endereco=reg_data['endereco'],
-                    tipo=reg_data['tipo'],
-                    funcao_id=reg_data['funcao_id'],
-                    acesso=reg_data['acesso'], # Adicionado
-                    tamanho=reg_data['tamanho'], # Adicionado
+                    device_id=new_slave.id, # slave_id to device_id
+                    name="Placeholder Name", # New field - Frontend JSON structure needs update
+                    function_code=1, # Placeholder - Frontend JSON structure needs update
+                    address=reg_data['endereco'], # endereco to address
+                    data_type="int", # Placeholder - Frontend JSON structure needs update
+                    scale=1.0, # Placeholder - Frontend JSON structure needs update
+                    rw="R", # Placeholder - Frontend JSON structure needs update
                     descricao=reg_data.get('descricao')
                 )
                 db.session.add(new_register)
@@ -49,87 +45,83 @@ def novo_modbus():
         flash("Escravo Modbus criado com sucesso!", "success")
         return redirect(url_for("lista_modbus"))
 
-    return render_template("novo_modbus.html", form=form, funcoes=funcoes_serializable)
+    return render_template("novo_modbus.html", form=form)
 
 @app.route("/modbus/atualiza/<int:id>", methods=["GET", "POST"])
 def atualiza_modbus(id):
-    slave = ModbusSlave.query.get_or_404(id)
-    form = ModbusSlaveForm(obj=slave)
-    funcoes = FuncaoRegistrador.query.all()
-    funcoes_serializable = [{'id': f.id, 'funcao': f.funcao} for f in funcoes] # Serializar FuncaoRegistrador
-
-    if request.method == 'POST':
-        if form.validate_on_submit():
-            slave.nome = form.nome.data
-            slave.slave_id = form.slave_id.data
-            
-            ModbusRegister.query.filter_by(slave_id=slave.id).delete()
-            
-            registradores_data = request.form.get('registradores_json')
-            if registradores_data:
-                import json
-                registradores_list = json.loads(registradores_data)
-                for reg_data in registradores_list:
-                    # Garantir que funcao_id não seja uma string vazia
-                    funcao_id = reg_data.get('funcao_id')
-                    if funcao_id:
-                        new_register = ModbusRegister(
-                            slave_id=slave.id,
-                            endereco=reg_data['endereco'],
-                            tipo=reg_data['tipo'],
-                            funcao_id=int(funcao_id),
-                            acesso=reg_data.get('acesso', ''), # Adicionado com default
-                            tamanho=reg_data.get('tamanho', ''), # Adicionado com default
-                            data_type=reg_data.get('data_type', 'int16'), # Adicionado com default
-                            descricao=reg_data.get('descricao')
-                        )
-                        db.session.add(new_register)
-            
-            db.session.commit()
-            flash("Escravo Modbus atualizado com sucesso!", "success")
-            return redirect(url_for("lista_modbus"))
-        else:
-            flash("Erro ao atualizar Escravo Modbus! Verifique os dados.", "danger")
+    slave = ModbusDevice.query.get_or_404(id)
+    form = ModbusDeviceForm(obj=slave)
+    if form.validate_on_submit():
+        slave.name = form.nome.data
+        slave.slave_id = form.slave_id.data
+        
+        ModbusRegister.query.filter_by(device_id=slave.id).delete() # slave_id to device_id
+        
+        registradores_data = request.form.get('registradores_json')
+        if registradores_data:
+            import json
+            registradores_list = json.loads(registradores_data)
+            for reg_data in registradores_list:
+                # Garantir que funcao_id não seja uma string vazia
+                # funcao_id = reg_data.get('funcao_id') # Removed
+                # if funcao_id: # Removed
+                    new_register = ModbusRegister(
+                        device_id=slave.id, # slave_id to device_id
+                        name="Placeholder Name", # New field - Frontend JSON structure needs update
+                        function_code=1, # Placeholder - Frontend JSON structure needs update
+                        address=reg_data['endereco'], # endereco to address
+                        data_type="int", # Placeholder - Frontend JSON structure needs update
+                        scale=1.0, # Placeholder - Frontend JSON structure needs update
+                        rw="R", # Placeholder - Frontend JSON structure needs update
+                        descricao=reg_data.get('descricao')
+                    )
+                    db.session.add(new_register)
+        
+        db.session.commit()
+        flash("Escravo Modbus atualizado com sucesso!", "success")
+        return redirect(url_for("lista_modbus"))
+    else:
+        flash("Erro ao atualizar Escravo Modbus! Verifique os dados.", "danger")
 
     # Para o método GET, carregar os registradores existentes
     registradores_existentes = [{
         'id': reg.id,
-        'endereco': reg.endereco,
-        'tipo': reg.tipo,
+        'name': reg.name, # New field
+        'function_code': reg.function_code, # New field
+        'address': reg.address, # endereco to address
+        'data_type': reg.data_type,
+        'scale': reg.scale, # New field
+        'rw': reg.rw, # acesso to rw
         'descricao': reg.descricao,
-        'funcao_id': reg.funcao_id,
-        'acesso': reg.acesso,
-        'tamanho': reg.tamanho,
-        'data_type': reg.data_type
     } for reg in slave.registradores]
     
-    return render_template("atualiza_modbus.html", form=form, slave=slave, funcoes=funcoes_serializable, registradores_existentes=registradores_existentes)
+    return render_template("atualiza_modbus.html", form=form, slave=slave, registradores_existentes=registradores_existentes)
 
 @app.route("/modbus/next_address")
 def next_modbus_address():
-    slave_id = request.args.get('slave_id', type=int)
-    register_type = request.args.get('type')
+    device_id = request.args.get('device_id', type=int) # slave_id to device_id
+    function_code = request.args.get('function_code', type=int) # register_type to function_code
 
-    if not slave_id or not register_type:
-        return jsonify({'error': 'Parâmetros slave_id e type são obrigatórios'}), 400
+    if not device_id or not function_code:
+        return jsonify({'error': 'Parâmetros device_id e function_code são obrigatórios'}), 400
 
-    # Mapeamento de tipo de registrador para sua faixa inicial
+    # Mapeamento de function_code para sua faixa inicial (simplified for now)
     base_addresses = {
-        'coil': 1,
-        'discrete_input': 10001,
-        'input_register': 30001,
-        'holding_register': 40001
+        1: 1,   # Coils
+        2: 10001, # Discrete Inputs
+        3: 40001, # Holding Registers
+        4: 30001  # Input Registers
     }
 
-    if register_type not in base_addresses:
-        return jsonify({'error': 'Tipo de registrador inválido'}), 400
+    if function_code not in base_addresses:
+        return jsonify({'error': 'Código de função inválido'}), 400
 
-    base_address = base_addresses[register_type]
+    base_address = base_addresses[function_code]
     
-    # Encontrar o maior endereço para o tipo e slave_id especificados
-    max_address = db.session.query(db.func.max(ModbusRegister.endereco)) \
-        .filter(ModbusRegister.slave_id == slave_id) \
-        .filter(ModbusRegister.tipo == register_type) \
+    # Encontrar o maior endereço para o tipo e device_id especificados
+    max_address = db.session.query(db.func.max(ModbusRegister.address)) \
+        .filter(ModbusRegister.device_id == device_id) \
+        .filter(ModbusRegister.function_code == function_code) \
         .scalar()
 
     if max_address is not None:
@@ -142,7 +134,7 @@ def next_modbus_address():
 
 @app.route("/modbus/exclui/<int:id>", methods=["POST"])
 def exclui_modbus(id):
-    slave = ModbusSlave.query.get_or_404(id)
+    slave = ModbusDevice.query.get_or_404(id)
     db.session.delete(slave)
     db.session.commit()
     flash("Escravo Modbus excluído com sucesso!", "success")

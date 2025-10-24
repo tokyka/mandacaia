@@ -42,7 +42,7 @@ class GrupoBombeamento(db.Model):
 class Motobomba(db.Model):
     __tablename__ = "motobomba"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False)
-    nome = db.Column(db.String(10), nullable=False, unique=True)
+    nome = db.Column(db.String(50), nullable=False, unique=True)
     descricao = db.Column(db.String(100), nullable=False)
     modelo = db.Column(db.String(30), nullable=False)
     fabricante = db.Column(db.String(30), nullable=False)
@@ -54,8 +54,8 @@ class Motobomba(db.Model):
     tensao_de_trabalho = db.Column(db.Enum(TensaoTrabalho), nullable=False)
 
     # Relacionamento com ModbusSlave
-    modbus_slave_id = db.Column(db.Integer, db.ForeignKey('modbus_slave.id'), nullable=True)
-    modbus_slave = db.relationship('ModbusSlave', backref='motobombas')
+    modbus_slave_id = db.Column(db.Integer, db.ForeignKey('modbus_device.id'), nullable=True)
+    modbus_slave = db.relationship('ModbusDevice', backref='motobombas')
 
     # Relacionamentos com Reservatorios (fonte e destino)
     reservatorio_fonte_id = db.Column(db.Integer, db.ForeignKey('reservatorio.id'), nullable=True)
@@ -104,7 +104,7 @@ class Tubospvc(db.Model):
         self.mm = mm
 
 class MotobombaForm(FlaskForm):
-    nome = StringField('Nome', validators=[DataRequired(), Length(min=2, max=10)])
+    nome = StringField('Nome', validators=[DataRequired(), Length(min=2, max=50)])
     descricao = StringField('Descrição', validators=[DataRequired(), Length(min=5, max=100)])
     modelo = StringField('Modelo', validators=[DataRequired(), Length(min=2, max=30)])
     fabricante = StringField('Fabricante', validators=[DataRequired(), Length(min=2, max=30)])

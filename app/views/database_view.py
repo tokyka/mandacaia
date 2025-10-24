@@ -1,6 +1,6 @@
 from flask import request, redirect, render_template, url_for, flash
 from app import app, db
-from ..models import situacao_model, reservatorio_model, motobomba_model, nivel_model, funcao_registrador_model, modbus_model
+from ..models import situacao_model, reservatorio_model, motobomba_model, nivel_model, modbus_device_register_model
 from datetime import date, time
 
 @app.route('/base_de_dados/inicie_tabelas', methods=["GET", "POST"])
@@ -55,37 +55,37 @@ def populate_db():
             db.session.add(new_tubo)
     db.session.commit()
 
-    #tabela funcao_registrador
-    funcoes = [
-        "Nível", "Tensão", "Corrente", "Potência", "Volume",
-        "Acionamento (Liga/Desliga)", "Status", "Análise Espectral de Fluxo", "Consumo"
-    ]
-    funcoes_map = {}
-    for f_nome in funcoes:
-        funcao_obj = funcao_registrador_model.FuncaoRegistrador.query.filter_by(funcao=f_nome).first()
-        if not funcao_obj:
-            funcao_obj = funcao_registrador_model.FuncaoRegistrador(funcao=f_nome)
-            db.session.add(funcao_obj)
-        funcoes_map[f_nome] = funcao_obj
-    db.session.commit()
+    # #tabela funcao_registrador - REMOVED
+    # funcoes = [
+    #     "Nível", "Tensão", "Corrente", "Potência", "Volume",
+    #     "Acionamento (Liga/Desliga)", "Status", "Análise Espectral de Fluxo", "Consumo"
+    # ]
+    # funcoes_map = {}
+    # for f_nome in funcoes:
+    #     funcao_obj = funcao_registrador_model.FuncaoRegistrador.query.filter_by(funcao=f_nome).first()
+    #     if not funcao_obj:
+    #         funcao_obj = funcao_registrador_model.FuncaoRegistrador(funcao=f_nome)
+    #         db.session.add(funcao_obj)
+    #     funcoes_map[f_nome] = funcao_obj
+    # db.session.commit()
 
     # Configurar Escravos e Registradores Modbus Padrão
     slaves_config = {
-        1: {"nome": "Motobomba Principal", "associar_a": ("motobomba", "Bomba Principal")},
-        2: {"nome": "Reservatório de Acumulação", "associar_a": ("reservatorio", "Reservatório Secundário")},
-        3: {"nome": "Reservatório de Distribuição", "associar_a": ("reservatorio", "Reservatório Principal")}
+        1: {"name": "Motobomba Principal", "type": "bomba", "associar_a": ("motobomba", "Bomba Principal")},
+        2: {"name": "Reservatório de Acumulação", "type": "reservatorio", "associar_a": ("reservatorio", "Reservatório Secundário")},
+        3: {"name": "Reservatório de Distribuição", "type": "reservatorio", "associar_a": ("reservatorio", "Reservatório Principal")}
     }
     registers_config = [
         # Bomba
-        {"slave_id": 1, "endereco": 1, "tipo": "coil", "funcao": "Acionamento (Liga/Desliga)", "acesso": "Read/Write", "tamanho": "1 bit", "data_type": "boolean"},
-        {"slave_id": 1, "endereco": 40100, "tipo": "holding_register", "funcao": "Tensão", "acesso": "Read-Only", "tamanho": "16 bits", "data_type": "int16"},
-        {"slave_id": 1, "endereco": 40101, "tipo": "holding_register", "funcao": "Corrente", "acesso": "Read-Only", "tamanho": "16 bits", "data_type": "int16"},
-        {"slave_id": 1, "endereco": 40105, "tipo": "holding_register", "funcao": "Consumo", "acesso": "Read-Only", "tamanho": "32 bits", "data_type": "float32"},
+        {"device_id": 1, "address": 1, "function_code": 1, "name": "Acionamento (Liga/Desliga)", "rw": "W", "data_type": "bool", "scale": 1.0},
+        {"device_id": 1, "address": 40100, "function_code": 3, "name": "Tensão", "rw": "R", "data_type": "float", "scale": 0.1},
+        {"device_id": 1, "address": 40101, "function_code": 3, "name": "Corrente", "rw": "R", "data_type": "float", "scale": 0.1},
+        {"device_id": 1, "address": 40105, "function_code": 3, "name": "Consumo", "rw": "R", "data_type": "float", "scale": 1.0},
         # Reservatórios
-        {"slave_id": 2, "endereco": 30001, "tipo": "input_register", "funcao": "Nível", "acesso": "Read-Only", "tamanho": "32 bits", "data_type": "float32"},
-        {"slave_id": 2, "endereco": 40001, "tipo": "holding_register", "funcao": "Volume", "acesso": "Read/Write", "tamanho": "32 bits", "data_type": "float32"},
-        {"slave_id": 3, "endereco": 30001, "tipo": "input_register", "funcao": "Nível", "acesso": "Read-Only", "tamanho": "32 bits", "data_type": "float32"},
-        {"slave_id": 3, "endereco": 40001, "tipo": "holding_register", "funcao": "Volume", "acesso": "Read/Write", "tamanho": "32 bits", "data_type": "float32"},
+        {"device_id": 2, "address": 30001, "function_code": 4, "name": "Nível", "rw": "R", "data_type": "float", "scale": 1.0},
+        {"device_id": 2, "address": 40001, "function_code": 3, "name": "Volume", "rw": "W", "data_type": "float", "scale": 1.0},
+        {"device_id": 3, "address": 30001, "function_code": 4, "name": "Nível", "rw": "R", "data_type": "float", "scale": 1.0},
+        {"device_id": 3, "address": 40001, "function_code": 3, "name": "Volume", "rw": "W", "data_type": "float", "scale": 1.0},
     ]
 
     # Adicionar motobomba e reservatórios antes de associar slaves
@@ -106,10 +106,10 @@ def populate_db():
 
 
     for slave_id, config in slaves_config.items():
-        slave = modbus_model.ModbusSlave.query.filter_by(slave_id=slave_id).first()
-        if not slave:
-            slave = modbus_model.ModbusSlave(nome=config["nome"], slave_id=slave_id)
-            db.session.add(slave)
+        device = modbus_device_register_model.ModbusDevice.query.filter_by(slave_id=slave_id).first()
+        if not device:
+            device = modbus_device_register_model.ModbusDevice(name=config["name"], slave_id=slave_id, type=config["type"])
+            db.session.add(device)
             db.session.commit()
 
         # Associar ao equipamento
@@ -117,45 +117,42 @@ def populate_db():
         if tipo_equip == "motobomba":
             pump = motobomba_model.Motobomba.query.filter_by(nome=nome_equip).first()
             if pump and pump.modbus_slave_id is None:
-                pump.modbus_slave_id = slave.id
+                pump.modbus_slave_id = device.id # slave.id to device.id
         elif tipo_equip == "reservatorio":
             tank = reservatorio_model.Reservatorio.query.filter_by(nome=nome_equip).first()
             if tank and tank.modbus_slave_id is None:
-                tank.modbus_slave_id = slave.id
+                tank.modbus_slave_id = device.id # slave.id to device.id
     db.session.commit()
 
     for reg_config in registers_config:
-        slave = modbus_model.ModbusSlave.query.filter_by(slave_id=reg_config["slave_id"]).first()
-        if not slave: continue
+        device = modbus_device_register_model.ModbusDevice.query.filter_by(slave_id=reg_config["device_id"]).first()
+        if not device: continue
 
-        funcao_obj = funcoes_map.get(reg_config["funcao"])
-        if not funcao_obj: continue
-
-        # Procura por um registrador para esta FUNÇÃO e ESCRAVO
-        reg = modbus_model.ModbusRegister.query.filter_by(
-            slave_id=slave.id,
-            funcao_id=funcao_obj.id
+        # Procura por um registrador para este NOME e DISPOSITIVO
+        reg = modbus_device_register_model.ModbusRegister.query.filter_by(
+            device_id=device.id,
+            name=reg_config["name"]
         ).first()
 
         if reg:
             # Se existe, verifica se os dados estão corretos e atualiza se necessário
-            if reg.endereco != reg_config["endereco"] or reg.tipo != reg_config["tipo"]:
-                reg.endereco = reg_config["endereco"]
-                reg.tipo = reg_config["tipo"]
-                reg.acesso = reg_config["acesso"]
-                reg.tamanho = reg_config["tamanho"]
-                reg.data_type = reg_config["data_type"] # Adiciona a atualização do novo campo
+            if reg.address != reg_config["address"] or reg.function_code != reg_config["function_code"]:
+                reg.address = reg_config["address"]
+                reg.function_code = reg_config["function_code"]
+                reg.rw = reg_config["rw"]
+                reg.data_type = reg_config["data_type"]
+                reg.scale = reg_config["scale"]
         else:
             # Se não existe, cria um novo
-            new_reg = modbus_model.ModbusRegister(
-                slave_id=slave.id,
-                funcao_id=funcao_obj.id,
-                endereco=reg_config["endereco"],
-                tipo=reg_config["tipo"],
-                acesso=reg_config["acesso"],
-                tamanho=reg_config["tamanho"],
-                data_type=reg_config["data_type"], # Adiciona o novo campo na criação
-                descricao=f'{reg_config["funcao"]} do {slave.nome}'
+            new_reg = modbus_device_register_model.ModbusRegister(
+                device_id=device.id,
+                name=reg_config["name"],
+                function_code=reg_config["function_code"],
+                address=reg_config["address"],
+                data_type=reg_config["data_type"],
+                scale=reg_config["scale"],
+                rw=reg_config["rw"],
+                descricao=f'{reg_config["name"]} do {device.name}'
             )
             db.session.add(new_reg)
     db.session.commit()
