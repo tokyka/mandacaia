@@ -40,11 +40,11 @@ class AcaoForm(FlaskForm):
 
 class RegraForm(FlaskForm):
     """Formulário principal para criar/editar uma regra."""
-    nome = StringField('Nome da Regra', validators=[DataRequired(), Length(min=3, max=100)])
-    descricao = StringField('Descrição', validators=[Length(max=255)])
-    habilitada = BooleanField('Habilitada', default=True)
+    name = StringField('Nome da Regra', validators=[DataRequired(), Length(min=3, max=100)])
+    description = StringField('Descrição', validators=[Length(max=255)])
+    enabled = BooleanField('Habilitada', default=True)
 
-    condicoes = FieldList(FormField(CondicaoForm), min_entries=1)
-    acoes = FieldList(FormField(AcaoForm), min_entries=1)
+    conditions = FieldList(FormField(CondicaoForm), min_entries=1)
+    actions = FieldList(FormField(AcaoForm), min_entries=1)
 
     submit = SubmitField('Salvar Regra')

@@ -101,38 +101,38 @@
                 <!-- Detalhes da Regra -->
                 <div class="form-section">
                     <div class="mb-3">
-                        <label class="form-label fw-bold">{{ form.nome.label }}</label>
-                        {{ form.nome(class="form-control") }}
+                        <label class="form-label fw-bold">{{ form.name.label }}</label>
+                        {{ form.name(class="form-control") }}
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-bold">{{ form.descricao.label }}</label>
-                        {{ form.descricao(class="form-control") }}
+                        <label class="form-label fw-bold">{{ form.description.label }}</label>
+                        {{ form.description(class="form-control") }}
                     </div>
                     <div class="form-check mb-3">
-                        {{ form.habilitada(class="form-check-input") }}
-                        <label class="form-check-label">{{ form.habilitada.label }}</label>
+                        {{ form.enabled(class="form-check-input") }}
+                        <label class="form-check-label">{{ form.enabled.label }}</label>
                     </div>
                 </div>
 
                 <!-- Seção de Condições -->
-                <div id="condicoes-container">
+                <div id="conditions-container">
                     <div class="form-section-header">
                         <h5 class="fw-bold"><i class="bi bi-diagram-3-fill me-2"></i>Condições</h5>
-                        <button type="button" class="btn btn-primary btn-add" id="add-condicao">+</button>
+                        <button type="button" class="btn btn-primary btn-add" id="add-condition">+</button>
                     </div>
-                    {% for condicao_form in form.condicoes %}
-                        {{ render_dynamic_field(condicao_form, 'condicoes', loop.index0) }}
+                    {% for condicao_form in form.conditions %}
+                        {{ render_dynamic_field(condicao_form, 'conditions', loop.index0) }}
                     {% endfor %}
                 </div>
 
                 <!-- Seção de Ações -->
-                <div id="acoes-container" class="mt-4">
+                <div id="actions-container" class="mt-4">
                     <div class="form-section-header">
                         <h5 class="fw-bold"><i class="bi bi-lightning-charge-fill me-2"></i>Ações</h5>
-                        <button type="button" class="btn btn-primary btn-add" id="add-acao">+</button>
+                        <button type="button" class="btn btn-primary btn-add" id="add-action">+</button>
                     </div>
-                    {% for acao_form in form.acoes %}
-                        {{ render_dynamic_field(acao_form, 'acoes', loop.index0) }}
+                    {% for acao_form in form.actions %}
+                        {{ render_dynamic_field(acao_form, 'actions', loop.index0) }}
                     {% endfor %}
                 </div>
 
@@ -146,24 +146,24 @@
 </div>
 
 <!-- Templates for new fields -->
-<div id="condicao-template" style="display: none;">
-    {% set condicao_form = form.condicoes.append_entry().form %}
-    {{ render_dynamic_field(condicao_form, 'condicoes', '__prefix__') }}
+<div id="condition-template" style="display: none;">
+    {% set condicao_form = form.conditions.append_entry().form %}
+    {{ render_dynamic_field(condicao_form, 'conditions', '__prefix__') }}
 </div>
-<div id="acao-template" style="display: none;">
-    {% set acao_form = form.acoes.append_entry().form %}
-    {{ render_dynamic_field(acao_form, 'acoes', '__prefix__') }}
+<div id="action-template" style="display: none;">
+    {% set acao_form = form.actions.append_entry().form %}
+    {{ render_dynamic_field(acao_form, 'actions', '__prefix__') }}
 </div>
 
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    document.getElementById('add-condicao').addEventListener('click', function() {
-        addField('condicoes');
+    document.getElementById('add-condition').addEventListener('click', function() {
+        addField('conditions');
     });
 
-    document.getElementById('add-acao').addEventListener('click', function() {
-        addField('acoes');
+    document.getElementById('add-action').addEventListener('click', function() {
+        addField('actions');
     });
 
     // Initialize visibility for existing fields on page load
@@ -193,7 +193,7 @@ function toggleAlvoFields(selectElement) {
 function addField(prefix) {
     const container = document.getElementById(prefix + '-container');
     const index = container.querySelectorAll('.dynamic-form-item').length;
-    const templateId = prefix === 'condicoes' ? 'condicao-template' : 'acao-template';
+    const templateId = prefix === 'conditions' ? 'condition-template' : 'action-template';
     const template = document.getElementById(templateId).innerHTML;
     const newFieldHTML = template.replace(/__prefix__/g, index);
     

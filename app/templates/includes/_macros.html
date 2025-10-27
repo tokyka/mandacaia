@@ -2,10 +2,10 @@
 <div class="form-section dynamic-form-item">
     <div class="row">
         <div class="col-md-4 mb-3">
-            <label class="form-label">{{ field.variavel.label if 'condicoes' in prefix else field.tipo_acao.label }}</label>
-            {{ field.variavel(class="form-select") if 'condicoes' in prefix else field.tipo_acao(class="form-select", onchange="toggleAlvoFields(this)") }}
+            <label class="form-label">{{ field.variavel.label if 'conditions' in prefix else field.tipo_acao.label }}</label>
+            {{ field.variavel(class="form-select") if 'conditions' in prefix else field.tipo_acao(class="form-select", onchange="toggleAlvoFields(this)") }}
         </div>
-        {% if 'condicoes' in prefix %}
+        {% if 'conditions' in prefix %}
         <div class="col-md-3 mb-3">
             <label class="form-label">{{ field.operador.label }}</label>
             {{ field.operador(class="form-select") }}
