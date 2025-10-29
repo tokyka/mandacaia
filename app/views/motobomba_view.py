@@ -1,7 +1,7 @@
 from app import app, db
 from flask import request, redirect, render_template, url_for, flash
 from ..models import reservatorio_model
-from ..models.modbus_device_register_model import ModbusDevice
+from ..models.modbus_device_register_model import ModbusDevice, ModbusRegister
 from ..models.motobomba_model import Motobomba, MotobombaForm, GrupoBombeamento, FuncaoBomba, StatusRotacao, Tubospvc, TensaoTrabalho
 
 def _populate_form_choices(form):
@@ -13,8 +13,16 @@ def _populate_form_choices(form):
 
     # Popula slaves
     slaves = ModbusDevice.query.all()
-    form.modbus_slave_id.choices = [(s.id, s.name) for s in slaves]
+    form.modbus_slave_id.choices = [(s.id, s.device_name) for s in slaves]
     form.modbus_slave_id.choices.insert(0, (0, 'Nenhum'))
+
+    # Popula registradores de acionamento (escrita, Coil)
+    actuator_registers = ModbusRegister.query.filter(
+        ModbusRegister.rw == 'W',
+        ModbusRegister.function_code.in_([1, 5])
+    ).all()
+    form.actuator_register_id.choices = [(r.id, f'{r.device.device_name} - {r.name}') for r in actuator_registers]
+    form.actuator_register_id.choices.insert(0, (0, 'Nenhum'))
 
     # Popula reservatórios
     reservatorios = reservatorio_model.Reservatorio.query.all()
@@ -35,7 +43,7 @@ def list_pumps():
         db.joinedload(Motobomba.modbus_slave),
         db.joinedload(Motobomba.reservatorio_fonte),
         db.joinedload(Motobomba.reservatorio_destino),
-        db.joinedload(Motobomba.grupo_bombeamento)  # Eager load
+        db.joinedload(Motobomba.grupo_bombeamento)
     ).all()
     return render_template("lista_motobombas.html", motobombas=motobombas)
 
@@ -50,6 +58,7 @@ def new_pump():
 
         # Tratar valores '0' como None
         modbus_slave_id = form.modbus_slave_id.data if form.modbus_slave_id.data != 0 else None
+        actuator_register_id = form.actuator_register_id.data if form.actuator_register_id.data != 0 else None
         reservatorio_fonte_id = form.reservatorio_fonte_id.data if form.reservatorio_fonte_id.data != 0 else None
         reservatorio_destino_id = form.reservatorio_destino_id.data if form.reservatorio_destino_id.data != 0 else None
         grupo_bombeamento_id = form.grupo_bombeamento_id.data if form.grupo_bombeamento_id.data != 0 else None
@@ -64,6 +73,7 @@ def new_pump():
             recalque=recalque_obj,
             tensao_de_trabalho=form.tensao_de_trabalho.data,
             modbus_slave_id=modbus_slave_id,
+            actuator_register_id=actuator_register_id,
             reservatorio_fonte_id=reservatorio_fonte_id,
             reservatorio_destino_id=reservatorio_destino_id,
             grupo_bombeamento_id=grupo_bombeamento_id,
@@ -95,6 +105,7 @@ def update_pump(id):
         
         # Tratar valores '0' como None
         motobomba.modbus_slave_id = form.modbus_slave_id.data if form.modbus_slave_id.data != 0 else None
+        motobomba.actuator_register_id = form.actuator_register_id.data if form.actuator_register_id.data != 0 else None
         motobomba.reservatorio_fonte_id = form.reservatorio_fonte_id.data if form.reservatorio_fonte_id.data != 0 else None
         motobomba.reservatorio_destino_id = form.reservatorio_destino_id.data if form.reservatorio_destino_id.data != 0 else None
         motobomba.grupo_bombeamento_id = form.grupo_bombeamento_id.data if form.grupo_bombeamento_id.data != 0 else None
@@ -112,6 +123,7 @@ def update_pump(id):
         form.recalque.data = str(motobomba.recalque_id)
         form.tensao_de_trabalho.data = motobomba.tensao_de_trabalho.value
         form.modbus_slave_id.data = motobomba.modbus_slave_id or 0
+        form.actuator_register_id.data = motobomba.actuator_register_id or 0
         form.reservatorio_fonte_id.data = motobomba.reservatorio_fonte_id or 0
         form.reservatorio_destino_id.data = motobomba.reservatorio_destino_id or 0
         form.grupo_bombeamento_id.data = motobomba.grupo_bombeamento_id or 0

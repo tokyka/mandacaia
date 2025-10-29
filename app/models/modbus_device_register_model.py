@@ -7,16 +7,18 @@ import sqlalchemy as sa
 class ModbusDevice(db.Model):
     __tablename__ = "modbus_device"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, nullable=False)
-    name = db.Column(db.String(80), nullable=False)
+    device_name = db.Column(db.String(80), nullable=False)
     ip_address = db.Column(db.String(100), nullable=True) # IP address for TCP or serial port for RTU
     slave_id = db.Column(db.Integer, nullable=False, unique=True)
     type = db.Column(sa.Enum('reservatorio', 'bomba', 'sensor', 'outro', name='device_type'), nullable=False)
     ativo = db.Column(sa.Boolean, nullable=False, default=True)
     
     registers = db.relationship('ModbusRegister', back_populates='device', lazy=True, cascade="all, delete-orphan")
+    motobombas = db.relationship('Motobomba', back_populates='modbus_slave')
+    reservatorios = db.relationship('Reservatorio', back_populates='modbus_slave')
 
-    def __init__(self, name, ip_address, slave_id, type, ativo=True):
-        self.name = name
+    def __init__(self, device_name, ip_address, slave_id, type, ativo=True):
+        self.device_name = device_name
         self.ip_address = ip_address
         self.slave_id = slave_id
         self.type = type
@@ -48,7 +50,7 @@ class ModbusRegister(db.Model):
         self.descricao = descricao
 
 class ModbusDeviceForm(FlaskForm):
-    name = StringField('Nome do Dispositivo', validators=[DataRequired(), Length(min=2, max=80)])
+    device_name = StringField('Nome do Dispositivo', validators=[DataRequired(), Length(min=2, max=80)])
     ip_address = StringField('Endereço IP / Porta Serial', validators=[Optional(), Length(max=100)])
     slave_id = IntegerField('ID do Escravo', validators=[DataRequired(), NumberRange(min=1, max=247)])
     type = SelectField('Tipo de Dispositivo', choices=[('reservatorio', 'Reservatório'), ('bomba', 'Bomba'), ('sensor', 'Sensor'), ('outro', 'Outro')], validators=[DataRequired()])

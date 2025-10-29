@@ -55,7 +55,10 @@ class Motobomba(db.Model):
 
     # Relacionamento com ModbusSlave
     modbus_slave_id = db.Column(db.Integer, db.ForeignKey('modbus_device.id'), nullable=True)
-    modbus_slave = db.relationship('ModbusDevice', backref='motobombas')
+    modbus_slave = db.relationship('ModbusDevice', back_populates='motobombas')
+
+    actuator_register_id = db.Column(db.Integer, db.ForeignKey('modbus_register.id'), nullable=True)
+    actuator_register = db.relationship('ModbusRegister', foreign_keys=[actuator_register_id])
 
     # Relacionamentos com Reservatorios (fonte e destino)
     reservatorio_fonte_id = db.Column(db.Integer, db.ForeignKey('reservatorio.id'), nullable=True)
@@ -73,7 +76,7 @@ class Motobomba(db.Model):
 
     def __init__(self, nome, descricao, modelo, fabricante, potencia, succao, recalque, tensao_de_trabalho, 
                  modbus_slave_id=None, reservatorio_fonte_id=None, reservatorio_destino_id=None,
-                 grupo_bombeamento_id=None, funcao=FuncaoBomba.PRINCIPAL, status_rotacao=StatusRotacao.EM_ESPERA):
+                 grupo_bombeamento_id=None, funcao=FuncaoBomba.PRINCIPAL, status_rotacao=StatusRotacao.EM_ESPERA, actuator_register_id=None):
         self.nome = nome
         self.descricao = descricao
         self.modelo = modelo
@@ -82,6 +85,7 @@ class Motobomba(db.Model):
         self.succao = succao
         self.recalque = recalque
         self.modbus_slave_id = modbus_slave_id
+        self.actuator_register_id = actuator_register_id
         self.reservatorio_fonte_id = reservatorio_fonte_id
         self.reservatorio_destino_id = reservatorio_destino_id
         self.grupo_bombeamento_id = grupo_bombeamento_id
@@ -115,6 +119,7 @@ class MotobombaForm(FlaskForm):
     
     # Campos de associação
     modbus_slave_id = SelectField('Dispositivo Modbus', coerce=int, validators=[Optional()])
+    actuator_register_id = SelectField('Registrador de Acionamento', coerce=int, validators=[Optional()])
     reservatorio_fonte_id = SelectField('Reservatório Fonte (de onde puxa)', coerce=int, validators=[Optional()])
     reservatorio_destino_id = SelectField('Reservatório Destino (para onde envia)', coerce=int, validators=[Optional()])
     

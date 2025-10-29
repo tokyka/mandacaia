@@ -207,7 +207,7 @@
                             <td>{{reservatorio.tipos.tipo}}</td>
                             <td>
                                 {% if reservatorio.modbus_slave %}
-                                    <span class="badge bg-primary">{{ reservatorio.modbus_slave.nome }}</span>
+                                    <span class="badge bg-primary">{{ reservatorio.modbus_slave.device_name }}</span>
                                 {% else %}
                                     <span class="text-muted">Nenhum</span>
                                 {% endif %}

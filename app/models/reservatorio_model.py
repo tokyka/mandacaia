@@ -24,14 +24,18 @@ class Reservatorio(db.Model):
 
     # Relacionamento com ModbusSlave
     modbus_slave_id = db.Column(db.Integer, db.ForeignKey('modbus_device.id'), nullable=True)
-    modbus_slave = db.relationship('ModbusDevice', backref='reservatorios')
+    modbus_slave = db.relationship('ModbusDevice', back_populates='reservatorios')
 
-    def __init__(self, nome, descricao, capacidade_maxima, tipos, modbus_slave_id=None): # Atualizado __init__
+    level_register_id = db.Column(db.Integer, db.ForeignKey('modbus_register.id'), nullable=True)
+    level_register = db.relationship('ModbusRegister', foreign_keys=[level_register_id])
+
+    def __init__(self, nome, descricao, capacidade_maxima, tipos, modbus_slave_id=None, level_register_id=None): # Atualizado __init__
         self.nome = nome
         self.descricao = descricao
         self.capacidade_maxima = capacidade_maxima
         self.tipos = tipos
         self.modbus_slave_id = modbus_slave_id
+        self.level_register_id = level_register_id
 
 class ReservatorioForm(FlaskForm):
     nome = StringField('Nome do Reservatório', validators=[DataRequired(), Length(min=2, max=30)])
@@ -39,4 +43,5 @@ class ReservatorioForm(FlaskForm):
     capacidade_maxima = FloatField('Capacidade Máxima (Litros)', validators=[DataRequired(), NumberRange(min=1)]) # Novo campo no formulário
     tipo = SelectField('Tipo', coerce=int, validators=[DataRequired()])
     modbus_slave_id = SelectField('Dispositivo Modbus', coerce=int, validators=[Optional()])
+    level_register_id = SelectField('Registrador de Nível', coerce=int, validators=[Optional()])
     submit = SubmitField('Salvar')

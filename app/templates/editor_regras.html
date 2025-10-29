@@ -157,6 +157,9 @@
 
 
 <script>
+// Passa as choices de condição do backend para o JavaScript
+const conditionChoices = {{ condition_choices|tojson }};
+
 document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('add-condition').addEventListener('click', function() {
         addField('conditions');
@@ -200,6 +203,19 @@ function addField(prefix) {
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = newFieldHTML;
     const newField = tempDiv.firstElementChild;
+
+    // Se for um campo de condição, popula o select de variáveis
+    if (prefix === 'conditions') {
+        const selectVariavel = newField.querySelector('select[name*="variavel"]');
+        if (selectVariavel) {
+            conditionChoices.forEach(choice => {
+                const option = document.createElement('option');
+                option.value = choice[0];
+                option.textContent = choice[1];
+                selectVariavel.appendChild(option);
+            });
+        }
+    }
 
     container.appendChild(newField);
 

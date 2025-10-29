@@ -219,7 +219,7 @@
                 <i class="bi bi-pencil-square me-3" style="font-size: 2.5rem; color: var(--primary-blue);"></i>
                 <h2 class="page-title">Atualizar Escravo Modbus</h2>
             </div>
-            <p class="subtitle">{{ slave.name }}</p>
+            <p class="subtitle">{{ slave.device_name }}</p>
         </div>
     </div>
 </div>
@@ -239,10 +239,10 @@
                 </div>
 
                 <div class="mb-4">
-                    {{ form.name.label(class="form-label") }}
+                    {{ form.device_name.label(class="form-label") }}
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-tag-fill"></i></span>
-                        {{ form.name(class="form-control", placeholder="Ex: Sensor de Nível 01") }}
+                        {{ form.device_name(class="form-control", placeholder="Ex: Sensor de Nível 01") }}
                     </div>
                 </div>
 

@@ -205,7 +205,7 @@
                             <td><strong>{{motobomba.nome}}</strong></td>
                             <td>
                                 {% if motobomba.modbus_slave %}
-                                    <span class="badge bg-primary">{{ motobomba.modbus_slave.nome }}</span>
+                                    <span class="badge bg-primary">{{ motobomba.modbus_slave.device_name }}</span>
                                 {% else %}
                                     <span class="text-muted">Nenhum</span>
                                 {% endif %}

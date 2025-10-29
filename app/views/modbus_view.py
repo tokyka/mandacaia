@@ -20,7 +20,7 @@ def novo_dispositivo():
     form = ModbusDeviceForm()
 
     if form.validate_on_submit():
-        novo_slave = ModbusDevice(name=form.name.data, ip_address=form.ip_address.data, slave_id=form.slave_id.data, type=form.type.data, ativo=form.ativo.data)
+        novo_slave = ModbusDevice(device_name=form.device_name.data, ip_address=form.ip_address.data, slave_id=form.slave_id.data, type=form.type.data, ativo=form.ativo.data)
         db.session.add(novo_slave)
         db.session.commit() # Commit para obter o ID do novo escravo
 
@@ -55,7 +55,7 @@ def atualiza_modbus(id):
     slave = ModbusDevice.query.get_or_404(id)
     form = ModbusDeviceForm(original_slave_id=slave.slave_id, obj=slave)
     if form.validate_on_submit():
-        slave.name = form.name.data
+        slave.device_name = form.device_name.data
         slave.ip_address = form.ip_address.data
         slave.slave_id = form.slave_id.data
         slave.type = form.type.data

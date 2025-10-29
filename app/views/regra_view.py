@@ -8,6 +8,60 @@ from app.models.motobomba_model import Motobomba
 from app.models.modbus_device_register_model import ModbusDevice, ModbusRegister
 from app.models import reservatorio_model
 
+def get_variavel_str_from_register_id(register_id):
+    register = ModbusRegister.query.get(register_id)
+    if not register:
+        return None
+
+    if register.device.type == 'reservatorio':
+        reservatorio = reservatorio_model.Reservatorio.query.filter_by(level_register_id=register_id).first()
+        if reservatorio:
+            if "Nível" in register.name:
+                return f'Nivel_Reservatorio_{reservatorio.tipos.tipo.split(" ")[-1]}'
+            elif "Volume" in register.name:
+                return f'Volume_Reservatorio_{reservatorio.tipos.tipo.split(" ")[-1]}'
+    elif register.device.type == 'bomba':
+        motobomba = Motobomba.query.filter_by(actuator_register_id=register_id).first()
+        if motobomba:
+            if "Tensão" in register.name:
+                return 'Tensao_Motobomba'
+            elif "Corrente" in register.name:
+                return 'Corrente_Motobomba'
+            elif "Potência" in register.name:
+                return 'Potencia_Motobomba'
+            elif "Consumo" in register.name:
+                return 'Consumo_Motobomba'
+    return None
+
+def get_motobomba_id_from_target_register_id(register_id):
+    register = ModbusRegister.query.get(register_id)
+    if register and register.device.type == 'bomba':
+        motobomba = Motobomba.query.filter_by(actuator_register_id=register_id).first()
+        if motobomba:
+            return motobomba.id
+    return None
+
+def _get_dynamic_choices():
+    condition_choices = [('', 'Selecione uma variável')]
+    
+    # Choices for Conditions (Reservatorios)
+    reservatorios = reservatorio_model.Reservatorio.query.all()
+    for res in reservatorios:
+        condition_choices.append((f'Nivel_Reservatorio_{res.tipos.tipo.split(" ")[-1]}', f'Nivel Reservatório {res.nome} (%)'))
+        condition_choices.append((f'Volume_Reservatorio_{res.tipos.tipo.split(" ")[-1]}', f'Volume Reservatório {res.nome} (L)'))
+
+    # Choices for Conditions (Motobombas)
+    # Adiciona opções genéricas para motobombas, já que os registradores são buscados dinamicamente
+    condition_choices.extend([
+        ('Tensao_Motobomba', 'Tensão da Motobomba (V)'),
+        ('Corrente_Motobomba', 'Corrente da Motobomba (A)'),
+        ('Potencia_Motobomba', 'Potência da Motobomba (W)'),
+        ('Consumo_Motobomba', 'Consumo da Motobomba (kWh)')
+    ])
+
+    return condition_choices
+
+
 
 @app.route('/regras_modbus/lista')
 def list_regras():
@@ -17,15 +71,20 @@ def list_regras():
 
 @app.route('/regras_modbus/criar', methods=['GET', 'POST'])
 def criar_regra():
+    form = RegraForm()
+    
+    # Popula choices dinamicamente
+    condition_choices = _get_dynamic_choices()
+    for cond_form in form.conditions:
+        cond_form.variavel.choices = condition_choices
+
     motobombas = Motobomba.query.all()
     motobomba_choices = [(mb.id, mb.nome) for mb in motobombas]
-    AcaoForm.registrador_alvo.kwargs = {'choices': motobomba_choices}
-    form = RegraForm()
+    for acao_form in form.actions:
+        acao_form.registrador_alvo.choices = motobomba_choices
 
     if form.validate_on_submit():
-        # Cleanup class modification
-        if 'choices' in AcaoForm.registrador_alvo.kwargs:
-            del AcaoForm.registrador_alvo.kwargs['choices']
+        errors = []
         try:
             nova_regra = ModbusRule(
                 name=form.name.data,
@@ -51,18 +110,18 @@ def criar_regra():
                         reservatorio_model.Tiporeservatorio, 
                         reservatorio_model.Reservatorio.tipo_id == reservatorio_model.Tiporeservatorio.id
                     ).filter(
-                        ModbusRegister.name.like(f'{funcao_form}%'),
+                        ModbusRegister.name.like(f'%{funcao_form}%'),
                         reservatorio_model.Tiporeservatorio.tipo.like(f'%{tipo_str}%')
                     ).first()
 
                 elif "Motobomba" in conceito_dispositivo:
                     target_register = ModbusRegister.query.join(ModbusDevice).filter(
-                        ModbusRegister.name.like(f'{funcao_form}%'),
+                        ModbusRegister.name.like(f'%{funcao_form}%'),
                         ModbusDevice.type == 'bomba'
                     ).first()
 
                 if not target_register:
-                    flash(f"Não foi possível encontrar um registrador correspondente para '{variavel_str}'.", 'danger')
+                    errors.append(f"Não foi possível encontrar um registrador correspondente para '{variavel_str}'.")
                     continue
 
                 nova_condicao = ModbusCondition(
@@ -86,15 +145,16 @@ def criar_regra():
                     if motobomba and motobomba.modbus_slave_id:
                         acionamento_register = ModbusRegister.query.filter(
                             ModbusRegister.device_id == motobomba.modbus_slave_id,
-                            ModbusRegister.name.like('Acionamento%')
+                            ModbusRegister.rw == 'W',
+                            ModbusRegister.function_code.in_([1, 5])
                         ).first()
                         if acionamento_register:
                             target_register_id = acionamento_register.id
                             write_value = 1.0 if tipo_acao == 'Ligar_Motobomba' else 0.0
                         else:
-                            flash(f"Registrador de acionamento para a motobomba '{motobomba.nome}' não encontrado.", 'danger')
+                            errors.append(f"Registrador de acionamento para a motobomba '{motobomba.nome}' não encontrado.")
                     else:
-                        flash(f"Motobomba com ID {motobomba_id} não encontrada ou não associada a um dispositivo modbus.", 'danger')
+                        errors.append(f"Motobomba com ID {motobomba_id} não encontrada ou não associada a um dispositivo modbus.")
 
                 elif acao_form.registrador_alvo_texto.data:
                     register_name = acao_form.registrador_alvo_texto.data
@@ -102,7 +162,7 @@ def criar_regra():
                     if register:
                         target_register_id = register.id
                     else:
-                        flash(f"Registrador alvo '{register_name}' não encontrado.", 'danger')
+                        errors.append(f"Registrador alvo '{register_name}' não encontrado.")
 
                 if target_register_id:
                     nova_acao = ModbusAction(
@@ -114,7 +174,17 @@ def criar_regra():
                     nova_regra.actions.append(nova_acao)
 
             if not nova_regra.conditions or not nova_regra.actions:
-                flash('A regra precisa de pelo menos uma condição e uma ação válidas.', 'warning')
+                errors.append('A regra precisa de pelo menos uma condição e uma ação válidas.')
+
+            if errors:
+                for error in errors:
+                    flash(error, 'danger')
+                # Re-popula os choices em caso de erro
+                for cond_form in form.conditions:
+                    cond_form.variavel.choices = condition_choices
+                for acao_form in form.actions:
+                    acao_form.registrador_alvo.choices = motobomba_choices
+                return render_template('editor_regras.html', form=form, title='Criar Nova Regra', action_url=url_for('criar_regra'), condition_choices=condition_choices)
             else:
                 db.session.add(nova_regra)
                 db.session.commit()
@@ -125,16 +195,23 @@ def criar_regra():
             db.session.rollback()
             flash(f'Erro ao criar a regra: {e}', 'danger')
 
-    # Cleanup class modification
-    if 'choices' in AcaoForm.registrador_alvo.kwargs:
-        del AcaoForm.registrador_alvo.kwargs['choices']
-    return render_template('editor_regras.html', form=form, title='Criar Nova Regra', action_url=url_for('criar_regra'))
+    return render_template('editor_regras.html', form=form, title='Criar Nova Regra', action_url=url_for('criar_regra'), condition_choices=condition_choices)
 
 
 @app.route('/regras_modbus/editar/<int:regra_id>', methods=['GET', 'POST'])
 def editar_regra(regra_id):
     regra = ModbusRule.query.get_or_404(regra_id)
     form = RegraForm(obj=regra)
+
+    # Popula choices dinamicamente
+    condition_choices = _get_dynamic_choices()
+    motobombas = Motobomba.query.all()
+    motobomba_choices = [(mb.id, mb.nome) for mb in motobombas]
+
+    for cond_form in form.conditions:
+        cond_form.variavel.choices = condition_choices
+    for acao_form in form.actions:
+        acao_form.registrador_alvo.choices = motobomba_choices
     motobombas = Motobomba.query.all()
     motobomba_choices = [(mb.id, mb.nome) for mb in motobombas]
 
@@ -170,13 +247,13 @@ def editar_regra(regra_id):
                         reservatorio_model.Tiporeservatorio, 
                         reservatorio_model.Reservatorio.tipo_id == reservatorio_model.Tiporeservatorio.id
                     ).filter(
-                        ModbusRegister.name.like(f'{funcao_form}%'),
+                        ModbusRegister.name.like(f'%{funcao_form}%'),
                         reservatorio_model.Tiporeservatorio.tipo.like(f'%{tipo_str}%')
                     ).first()
 
                 elif "Motobomba" in conceito_dispositivo:
                     target_register = ModbusRegister.query.join(ModbusDevice).filter(
-                        ModbusRegister.name.like(f'{funcao_form}%'),
+                        ModbusRegister.name.like(f'%{funcao_form}%'),
                         ModbusDevice.type == 'bomba'
                     ).first()
 
@@ -205,7 +282,8 @@ def editar_regra(regra_id):
                     if motobomba and motobomba.modbus_slave_id:
                         acionamento_register = ModbusRegister.query.filter(
                             ModbusRegister.device_id == motobomba.modbus_slave_id,
-                            ModbusRegister.name.like('Acionamento%')
+                            ModbusRegister.rw == 'W',
+                            ModbusRegister.function_code.in_([1, 5])
                         ).first()
                         if acionamento_register:
                             target_register_id = acionamento_register.id
@@ -239,40 +317,39 @@ def editar_regra(regra_id):
             db.session.rollback()
             flash(f'Erro ao atualizar a regra: {e}', 'danger')
     else:
-        # For GET request or validation failure, ensure choices are set
+        # Popula o formulário com os dados existentes para o método GET
+        # Garante que os choices sejam populados antes de renderizar o form
+        for cond_form in form.conditions:
+            cond_form.variavel.choices = condition_choices
         for acao_form in form.actions:
             acao_form.registrador_alvo.choices = motobomba_choices
 
-        # Manually populate conditions for GET request
-        form.conditions.entries = []
+        # Popula condições existentes
+        while len(form.conditions.entries) > 0:
+            form.conditions.pop_entry()
         for condicao_obj in regra.conditions:
-            condicao_form = CondicaoForm()
+            condicao_form = form.conditions.append_entry()
+            condicao_form.variavel.choices = condition_choices
+            condicao_form.variavel.data = get_variavel_str_from_register_id(condicao_obj.left_register_id)
             condicao_form.operador.data = condicao_obj.operator
             condicao_form.valor.data = str(condicao_obj.right_value)
-            condicao_form.variavel.data = get_variavel_str_from_register_id(condicao_obj.left_register_id)
-            form.conditions.append_entry(condicao_form)
 
-        # Manually populate actions for GET request
-        form.actions.entries = []
+        # Popula ações existentes
+        while len(form.actions.entries) > 0:
+            form.actions.pop_entry()
         for acao_obj in regra.actions:
-            acao_form = AcaoForm()
+            acao_form = form.actions.append_entry()
+            acao_form.registrador_alvo.choices = motobomba_choices
             acao_form.tipo_acao.data = acao_obj.name
             acao_form.valor.data = str(acao_obj.write_value) if acao_obj.write_value is not None else ''
-            
-            # Reverse lookup for registrador_alvo
             if acao_obj.name in ['Ligar_Motobomba', 'Desligar_Motobomba']:
                 acao_form.registrador_alvo.data = get_motobomba_id_from_target_register_id(acao_obj.target_register_id)
             else:
-                # For other actions, assume registrador_alvo_texto is used
-                # This is a simplification, as the model only stores target_register_id
-                # If the original form used registrador_alvo_texto, we need to retrieve the register name
                 register = ModbusRegister.query.get(acao_obj.target_register_id)
                 if register:
                     acao_form.registrador_alvo_texto.data = register.name
 
-            form.actions.append_entry(acao_form)
-
-    return render_template('editor_regras.html', form=form, title='Editar Regra', regra=regra, action_url=url_for('editar_regra', regra_id=regra.id))
+    return render_template('editor_regras.html', form=form, title='Editar Regra', regra=regra, action_url=url_for('editar_regra', regra_id=regra.id), condition_choices=condition_choices)
 
 
 @app.route('/regras_modbus/remover/<int:regra_id>', methods=['POST'])

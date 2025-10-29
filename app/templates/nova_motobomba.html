@@ -220,6 +220,17 @@
                     {% endif %}
                 </div>
                 <div class="mb-3">
+                    <label class="form-label"><i class="bi bi-toggle-on"></i>{{ form.actuator_register_id.label.text }}</label>
+                    {{ form.actuator_register_id(class="form-select") }}
+                    {% if form.actuator_register_id.errors %}
+                        <div class="alert alert-danger mt-1">
+                            {% for error in form.actuator_register_id.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
                     <label class="form-label"><i class="bi bi-box-arrow-in-down"></i>{{ form.reservatorio_fonte_id.label.text }}</label>
                     {{ form.reservatorio_fonte_id(class="form-select") }}
                     {% if form.reservatorio_fonte_id.errors %}

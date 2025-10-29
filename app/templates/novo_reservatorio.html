@@ -175,6 +175,17 @@
                         </div>
                     {% endif %}
                 </div>
+                <div class="mb-3">
+                    <label class="form-label"><i class="bi bi-speedometer"></i>{{ form.level_register_id.label.text }}</label>
+                    {{ form.level_register_id(class="form-select") }}
+                    {% if form.level_register_id.errors %}
+                        <div class="alert alert-danger mt-1">
+                            {% for error in form.level_register_id.errors %}
+                                <span>{{ error }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
                 <div class="form-actions">
                     {{ form.submit(class="btn btn-submit") }}
                     <a href="{{url_for('list_tanks')}}" class="btn btn-cancel" role="button">Cancelar</a>

@@ -15,12 +15,11 @@
             {{ field.valor(class="form-control") }}
         </div>
         {% else %}
-        <div class="col-md-4 mb-3">
+        <div class="col-md-6 mb-3">
             <label class="form-label">{{ field.registrador_alvo.label }}</label>
             {{ field.registrador_alvo(class="form-select") }}
-            {{ field.registrador_alvo_texto(class="form-control") }}
         </div>
-        <div class="col-md-2 mb-3">
+        <div class="col-md-4 mb-3">
             <label class="form-label">{{ field.valor.label }}</label>
             {{ field.valor(class="form-control") }}
         </div>
