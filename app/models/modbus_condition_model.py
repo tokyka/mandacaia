@@ -1,5 +1,14 @@
 from app import db
-from sqlalchemy.dialects.mysql import ENUM
+import enum
+from sqlalchemy import Enum
+
+class ConditionOperator(enum.Enum):
+    GT = '>'
+    LT = '<'
+    GE = '>='
+    LE = '<='
+    EQ = '=='
+    NE = '!='
 
 class ModbusCondition(db.Model):
     __tablename__ = 'modbus_condition'
@@ -8,7 +17,11 @@ class ModbusCondition(db.Model):
 
     name = db.Column(db.String(100), nullable=False)
     left_register_id = db.Column(db.Integer, db.ForeignKey('modbus_register.id'), nullable=False)
-    operator = db.Column(ENUM('>', '<', '>=', '<=', '==', '!=', name='condition_operator_type'), nullable=False)
+    operator = db.Column(
+        Enum(ConditionOperator, native_enum=False, name="condition_operator_enum", values_callable=lambda x: [member.value for member in x]),
+        nullable=False,
+        info={"compare_type": False}
+    )
     right_value = db.Column(db.Float, nullable=True) # Value for comparison
     right_is_register = db.Column(db.Boolean, nullable=False, default=False) # If right_value refers to another register's ID
     description = db.Column(db.Text, nullable=True)

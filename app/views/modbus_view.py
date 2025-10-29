@@ -90,6 +90,8 @@ def atualiza_modbus(id):
         flash("Erro ao atualizar Escravo Modbus! Verifique os dados.", "danger")
 
     # Para o método GET, carregar os registradores existentes
+    if request.method == 'GET':
+        form.type.data = slave.type.value
     fc_to_tipo_map = {1: 'coil', 2: 'discrete_input', 3: 'holding_register', 4: 'input_register'}
     registradores_existentes = [{
         'id': reg.id,
@@ -99,7 +101,7 @@ def atualiza_modbus(id):
         'endereco': reg.address, # endereco to address
         'data_type': reg.data_type,
         'scale': reg.scale, # New field
-        'rw': reg.rw, # acesso to rw
+        'rw': reg.rw.value, # acesso to rw
         'descricao': reg.descricao,
     } for reg in slave.registers]
     

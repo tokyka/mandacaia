@@ -77,8 +77,8 @@ def new_pump():
             reservatorio_fonte_id=reservatorio_fonte_id,
             reservatorio_destino_id=reservatorio_destino_id,
             grupo_bombeamento_id=grupo_bombeamento_id,
-            funcao=FuncaoBomba[form.funcao.data],
-            status_rotacao=StatusRotacao[form.status_rotacao.data]
+            funcao=next((f for f in FuncaoBomba if f.value == form.funcao.data), None),
+            status_rotacao=next((s for s in StatusRotacao if s.value == form.status_rotacao.data), None)
         )
         db.session.add(nova_motobomba)
         db.session.commit()
@@ -110,8 +110,8 @@ def update_pump(id):
         motobomba.reservatorio_destino_id = form.reservatorio_destino_id.data if form.reservatorio_destino_id.data != 0 else None
         motobomba.grupo_bombeamento_id = form.grupo_bombeamento_id.data if form.grupo_bombeamento_id.data != 0 else None
 
-        motobomba.funcao = FuncaoBomba[form.funcao.data]
-        motobomba.status_rotacao = StatusRotacao[form.status_rotacao.data]
+        motobomba.funcao = next((f for f in FuncaoBomba if f.value == form.funcao.data), None)
+        motobomba.status_rotacao = next((s for s in StatusRotacao if s.value == form.status_rotacao.data), None)
 
         db.session.commit()
         flash('Motobomba atualizada com sucesso!', 'success')

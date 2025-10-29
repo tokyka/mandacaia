@@ -2,21 +2,21 @@ from app import db
 from flask_wtf import FlaskForm
 from wtforms import StringField, SelectField, SubmitField
 from wtforms.validators import DataRequired, Length, Optional
-from enum import Enum
-from sqlalchemy import DateTime
+import enum
+from sqlalchemy import DateTime, Enum
 import datetime
 
 # --- Enums para novas funcionalidades ---
 
-class FuncaoBomba(Enum):
-    PRINCIPAL = "Principal"
-    RESERVA = "Reserva"
+class FuncaoBomba(enum.Enum):
+    PRINCIPAL = "PRINCIPAL"
+    RESERVA = "RESERVA"
 
-class StatusRotacao(Enum):
-    ATIVA = "Ativa"
-    EM_ESPERA = "Em espera"
+class StatusRotacao(enum.Enum):
+    ATIVA = "ATIVA"
+    EM_ESPERA = "EM_ESPERA"
 
-class TensaoTrabalho(Enum):
+class TensaoTrabalho(enum.Enum):
     V110 = "110 V"
     V220 = "220 V"
     V380 = "380 V"
@@ -51,7 +51,7 @@ class Motobomba(db.Model):
     succao = db.relationship("Tubospvc", foreign_keys="[Motobomba.succao_id]", backref="motobombas_succao")
     recalque_id = db.Column(db.SmallInteger, db.ForeignKey("tubos.id"), nullable=False)
     recalque = db.relationship("Tubospvc", foreign_keys="[Motobomba.recalque_id]", backref="motobombas_recalque")
-    tensao_de_trabalho = db.Column(db.Enum(TensaoTrabalho), nullable=False)
+    tensao_de_trabalho = db.Column(Enum(TensaoTrabalho, native_enum=False, values_callable=lambda x: [member.value for member in x]), nullable=False)
 
     # Relacionamento com ModbusSlave
     modbus_slave_id = db.Column(db.Integer, db.ForeignKey('modbus_device.id'), nullable=True)
@@ -69,14 +69,23 @@ class Motobomba(db.Model):
     # --- Novos Campos para Rotação e Gerenciamento ---
     grupo_bombeamento_id = db.Column(db.Integer, db.ForeignKey('grupo_bombeamento.id'), nullable=True)
     grupo_bombeamento = db.relationship('GrupoBombeamento', back_populates='motobombas')
-    
-    funcao = db.Column(db.Enum(FuncaoBomba), nullable=False, default=FuncaoBomba.PRINCIPAL)
-    status_rotacao = db.Column(db.Enum(StatusRotacao), nullable=False, default=StatusRotacao.EM_ESPERA)
+    funcao = db.Column(
+        Enum(FuncaoBomba, native_enum=False, name="funcao_bomba_enum", values_callable=lambda x: [member.value for member in x]),
+        nullable=False,
+        default=FuncaoBomba.PRINCIPAL,
+        info={"compare_type": False}
+    )
+    status_rotacao = db.Column(
+        Enum(StatusRotacao, native_enum=False, name="status_rotacao_enum", values_callable=lambda x: [member.value for member in x]),
+        nullable=False,
+        default=StatusRotacao.EM_ESPERA,
+        info={"compare_type": False}
+    )
     ultimo_acionamento = db.Column(DateTime, default=datetime.datetime.utcnow)
 
-    def __init__(self, nome, descricao, modelo, fabricante, potencia, succao, recalque, tensao_de_trabalho, 
+    def __init__(self, nome, descricao, modelo, fabricante, potencia, succao, recalque, tensao_de_trabalho: TensaoTrabalho, 
                  modbus_slave_id=None, reservatorio_fonte_id=None, reservatorio_destino_id=None,
-                 grupo_bombeamento_id=None, funcao=FuncaoBomba.PRINCIPAL, status_rotacao=StatusRotacao.EM_ESPERA, actuator_register_id=None):
+                 grupo_bombeamento_id=None, funcao: FuncaoBomba = FuncaoBomba.PRINCIPAL, status_rotacao: StatusRotacao = StatusRotacao.EM_ESPERA, actuator_register_id=None):
         self.nome = nome
         self.descricao = descricao
         self.modelo = modelo
@@ -91,11 +100,7 @@ class Motobomba(db.Model):
         self.grupo_bombeamento_id = grupo_bombeamento_id
         self.funcao = funcao
         self.status_rotacao = status_rotacao
-        
-        if isinstance(tensao_de_trabalho, str):
-            self.tensao_de_trabalho = TensaoTrabalho(tensao_de_trabalho)
-        else:
-            self.tensao_de_trabalho = tensao_de_trabalho
+        self.tensao_de_trabalho = tensao_de_trabalho
 
 class Tubospvc(db.Model):
     __tablename__ = "tubos"
@@ -115,7 +120,7 @@ class MotobombaForm(FlaskForm):
     potencia = StringField('Potência', validators=[DataRequired(), Length(min=2, max=10)])
     succao = SelectField('Sucção (pol)', validators=[DataRequired()])
     recalque = SelectField('Recalque (pol)', validators=[DataRequired()])
-    tensao_de_trabalho = SelectField('Tensão de Trabalho', choices=[(choice.value, choice.name) for choice in TensaoTrabalho], validators=[DataRequired()])
+    tensao_de_trabalho = SelectField('Tensão de Trabalho', choices=[(choice.value, choice.value) for choice in TensaoTrabalho], validators=[DataRequired()])
     
     # Campos de associação
     modbus_slave_id = SelectField('Dispositivo Modbus', coerce=int, validators=[Optional()])
@@ -125,8 +130,8 @@ class MotobombaForm(FlaskForm):
     
     # --- Novos Campos para Rotação ---
     grupo_bombeamento_id = SelectField('Grupo de Bombeamento', coerce=int, validators=[Optional()])
-    funcao = SelectField('Função no Grupo', choices=[(choice.name, choice.value) for choice in FuncaoBomba], validators=[DataRequired()])
-    status_rotacao = SelectField('Status de Rotação', choices=[(choice.name, choice.value) for choice in StatusRotacao], validators=[DataRequired()])
+    funcao = SelectField('Função no Grupo', choices=[(choice.value, choice.value) for choice in FuncaoBomba], validators=[DataRequired()])
+    status_rotacao = SelectField('Status de Rotação', choices=[(choice.value, choice.value) for choice in StatusRotacao], validators=[DataRequired()])
     
     submit = SubmitField('Salvar')
 

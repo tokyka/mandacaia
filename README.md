@@ -57,3 +57,38 @@ Para verificar a comunicação RTU de forma isolada (sem o banco de dados), voc�
     python modbus_master.py
     ```
 *   **Saída esperada:** Ciclos de leitura e escrita, mostrando os valores lidos de cada um dos 3 escravos.
+
+---
+
+## Debugging Alembic `ValueError` (Data too long for column / Enum issues)
+
+If you encounter `ValueError: not enough values to unpack` or `Data too long for column` errors during `flask db migrate`, especially related to `ENUM` types, it might be due to how Alembic's autogenerate feature interacts with MariaDB's `ENUM` representation.
+
+Here's a debugging step that can help pinpoint the exact problematic column:
+
+1.  **Add detailed logging to Alembic's `impl.py`:**
+    *   Locate the file: `YOUR_VENV_PATH/lib/pythonX.Y/site-packages/alembic/ddl/impl.py` (replace `YOUR_VENV_PATH` and `pythonX.Y` with your actual virtual environment path and Python version).
+    *   Open the file and find the `_tokenize_column_type` function (around line 530-540).
+    *   Modify the `for` loop within this function to include a logger call, like this:
+
+        ```python
+                if paren_term:
+                    term: str
+                    _logger = logging.getLogger(__name__) # Add this line
+                    for term in re.findall("[^(),]+", paren_term):
+                        _logger.info(f"DEBUG _tokenize_column_type: paren_term='{paren_term}', term='{term}'") # Add this line
+                        if "=" in term:
+                            key, val = term.split("=")
+                            params.kwargs[key.strip()] = val.strip()
+                        else:
+                            params.args.append(term.strip())
+        ```
+    *   Also, ensure `import logging` is at the top of `alembic/ddl/impl.py`.
+
+2.  **Run `flask db migrate`:**
+    *   Execute `flask db migrate -m "Debug migration"`
+    *   The console output will now show `DEBUG _tokenize_column_type` messages, indicating the `paren_term` and `term` values that Alembic is trying to process. This should help identify the specific column causing the `ValueError`.
+
+3.  **Revert changes:** After debugging, remember to revert these changes in `alembic/ddl/impl.py` to avoid polluting your logs.
+
+---
