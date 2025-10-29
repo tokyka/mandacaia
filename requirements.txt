@@ -8,3 +8,4 @@ Flask-Migrate
 email_validator
 pymodbus==3.11.3
 Twisted
+pyserial
