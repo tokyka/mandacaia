@@ -92,3 +92,7 @@ Here's a debugging step that can help pinpoint the exact problematic column:
 3.  **Revert changes:** After debugging, remember to revert these changes in `alembic/ddl/impl.py` to avoid polluting your logs.
 
 ---
+
+## Pendências
+
+*   **Flexibilizar Conexão do Master:** Atualmente, a porta serial (ex: `/tmp/ttyS1`) do script do master (`modbus_rtu_master_v4.py`) está fixa no código. O ideal é que essa configuração seja lida do banco de dados, permitindo que a porta de comunicação seja definida por dispositivo, o que tornaria o sistema mais flexível para diferentes topologias de rede.

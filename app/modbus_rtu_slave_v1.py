@@ -15,7 +15,7 @@ log = logging.getLogger()
 
 # --- Configuração dos Slaves e Registradores ---
 SLAVE_CONFIG = {
-    10: {
+    30: {
         "name": "Reservatorio_Acumulacao",
         "registers": [
             {"function": "Nível", "type": "input_register", "address": 30001, "data_type": "float32", "unit": "%"},
@@ -29,7 +29,7 @@ SLAVE_CONFIG = {
             {"function": "Volume", "type": "holding_register", "address": 40001, "data_type": "int32", "unit": "litros"},
         ]
     },
-    30: {
+    10: {
         "name": "Motobomba",
         "registers": [
             {"function": "Acionamento (Liga/Desliga)", "type": "coil", "address": 1, "data_type": "boolean"},
@@ -86,7 +86,7 @@ def registers_to_int(registers):
         return 0
     return (registers[0] << 16) | registers[1]
 
-# --- Thread de Simulação --- 
+# --- Thread de Simulação ---
 def simulation_thread(context):
     """Thread que atualiza dinamicamente os valores dos escravos."""
     log.info("Thread de simulação de dados iniciada.")
@@ -104,19 +104,19 @@ def simulation_thread(context):
         try:
             # --- Ler dados atuais dos slaves ---
             addr_nivel_acum = adjust_address("input_register", 30001)
-            current_level_acum = registers_to_float(context[10].getValues(4, addr_nivel_acum, count=2))
+            current_level_acum = registers_to_float(context[30].getValues(4, addr_nivel_acum, count=2))
 
             addr_nivel_dist = adjust_address("input_register", 30001)
             current_level_dist = registers_to_float(context[20].getValues(4, addr_nivel_dist, count=2))
 
             addr_volume_acum = adjust_address("holding_register", 40001)
-            capacidade_acum_L = registers_to_int(context[10].getValues(3, addr_volume_acum, count=2)) or 50000
+            capacidade_acum_L = registers_to_int(context[30].getValues(3, addr_volume_acum, count=2)) or 50000
 
             addr_volume_dist = adjust_address("holding_register", 40001)
             capacidade_dist_L = registers_to_int(context[20].getValues(3, addr_volume_dist, count=2)) or 25000
 
             addr_bomba_coil = adjust_address("coil", 1)
-            is_pump_on = context[30].getValues(1, addr_bomba_coil, count=1)[0]
+            is_pump_on = context[10].getValues(1, addr_bomba_coil, count=1)[0]
 
             # --- Simular consumo do reservatório de distribuição ---
             level_dist_after_consumption = current_level_dist
@@ -140,7 +140,7 @@ def simulation_thread(context):
                 # --- Simulação Elétrica Consistente ---
                 # 1. Determinar a potência real a ser usada
                 addr_potencia = adjust_address("holding_register", 40001)
-                power_from_register = registers_to_float(context[30].getValues(3, addr_potencia, count=2))
+                power_from_register = registers_to_float(context[10].getValues(3, addr_potencia, count=2))
                 
                 if power_from_register > 0:
                     simulated_power = power_from_register
@@ -161,21 +161,21 @@ def simulation_thread(context):
                 energy_accumulator_ws += energy_ws_cycle
                 kwh = energy_accumulator_ws / (3600 * 1000)
                 addr_consumo = adjust_address("input_register", 30020)
-                context[30].setValues(4, addr_consumo, float_to_registers(kwh))
+                context[10].setValues(4, addr_consumo, float_to_registers(kwh))
 
             # --- Escrever Valores Simulados de volta nos Registradores ---
-            context[10].setValues(4, addr_nivel_acum, float_to_registers(final_level_acum))
+            context[30].setValues(4, addr_nivel_acum, float_to_registers(final_level_acum))
             context[20].setValues(4, addr_nivel_dist, float_to_registers(final_level_dist))
 
             # Dados elétricos (serão 0 se a bomba estiver desligada)
             addr_tensao = adjust_address("input_register", 30001)
-            context[30].setValues(4, addr_tensao, float_to_registers(voltage))
+            context[10].setValues(4, addr_tensao, float_to_registers(voltage))
             addr_corrente = adjust_address("input_register", 30005)
-            context[30].setValues(4, addr_corrente, float_to_registers(current))
+            context[10].setValues(4, addr_corrente, float_to_registers(current))
             
             # Escreve a potência real simulada (ou 0 se a bomba estiver desligada)
             addr_potencia = adjust_address("holding_register", 40001)
-            context[30].setValues(3, addr_potencia, float_to_registers(simulated_power))
+            context[10].setValues(3, addr_potencia, float_to_registers(simulated_power))
 
             # --- Log ---
             pump_status_str = "ON" if is_pump_on else "OFF"
@@ -209,7 +209,7 @@ def run_server():
     log.info(f"Níveis Iniciais: Acumulação={initial_level_acum}%, Distribuição={initial_level_dist}%")
     
     addr_nivel_acum = adjust_address("input_register", 30001)
-    context[10].setValues(4, addr_nivel_acum, float_to_registers(initial_level_acum))
+    context[30].setValues(4, addr_nivel_acum, float_to_registers(initial_level_acum))
     
     addr_nivel_dist = adjust_address("input_register", 30001)
     context[20].setValues(4, addr_nivel_dist, float_to_registers(initial_level_dist))

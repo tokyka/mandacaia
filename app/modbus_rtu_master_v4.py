@@ -178,22 +178,26 @@ def evaluate_rules(client, session, lock):
                     log.info(f"  Condição '{condition.name}': Valor lido de '{left_register.name}' = {current_value}. Comparando com {condition.right_value} usando o operador '{condition.operator}'.")
 
                     # Avalia a condição
-                    op = condition.operator
+                    op = condition.operator.value # Use .value to get the string '=='
                     value_to_compare = condition.right_value
-                    
-                    if op == '==' and not (current_value == value_to_compare): conditions_met = False
-                    elif op == '!=' and not (current_value != value_to_compare): conditions_met = False
-                    elif op == '>' and not (current_value > value_to_compare): conditions_met = False
-                    elif op == '<' and not (current_value < value_to_compare): conditions_met = False
-                    elif op == '>=' and not (current_value >= value_to_compare): conditions_met = False
-                    elif op == '<=' and not (current_value <= value_to_compare): conditions_met = False
-                    
-                    if not conditions_met:
+
+                    condition_is_true = False
+                    if op == '==': condition_is_true = (current_value == value_to_compare)
+                    elif op == '!=': condition_is_true = (current_value != value_to_compare)
+                    elif op == '>':  condition_is_true = (current_value > value_to_compare)
+                    elif op == '<':  condition_is_true = (current_value < value_to_compare)
+                    elif op == '>=': condition_is_true = (current_value >= value_to_compare)
+                    elif op == '<=': condition_is_true = (current_value <= value_to_compare)
+
+                    if not condition_is_true:
+                        conditions_met = False
                         log.info(f"  Condição '{condition.name}' não atendida. Parando avaliação para esta regra.")
                         break # Para de checar outras condições para esta regra
 
                 if conditions_met:
                     log.warning(f"REGRA ATIVADA: '{rule.name}'. Todas as condições foram atendidas. Executando ações.")
+                    if not rule.actions:
+                        log.info(f"  Regra '{rule.name}' não possui ações configuradas. Nenhuma ação será executada.")
                     for action in rule.actions:
                         target_register = session.get(ModbusRegister, action.target_register_id)
                         if not target_register:
@@ -214,12 +218,21 @@ def evaluate_rules(client, session, lock):
                         # Escreve no registrador/bobina
                         with lock:
                             register_type = get_register_type_from_code(target_register.function_code)
+                            log.info(f"  Tentando escrever em um registrador do tipo: {register_type}")
+                            response = None
                             if register_type == 'holding_register':
-                                client.write_registers(target_register.address - 40001, values_to_write, device_id=target_register.device.slave_id)
+                                log.info(f"    --> Escrevendo em Holding Register. Endereço: {target_register.address - 40001}, Valor: {values_to_write}")
+                                response = client.write_registers(target_register.address - 40001, values_to_write, device_id=target_register.device.slave_id)
                             elif register_type == 'coil':
-                                client.write_coil(target_register.address - 1, bool(value_to_write), device_id=target_register.device.slave_id)
+                                log.info(f"    --> Escrevendo em Coil. Endereço: {target_register.address - 1}, Valor: {bool(value_to_write)}")
+                                response = client.write_coil(target_register.address - 1, bool(value_to_write), device_id=target_register.device.slave_id)
                             else:
                                 log.error(f"Tipo de registrador '{register_type}' não suporta escrita para a ação '{action.name}'.")
+
+                            if response and response.isError():
+                                log.error(f"  --> ERRO DE ESCRITA MODBUS: {response}")
+                            elif response:
+                                log.info(f"  --> Escrita Modbus bem-sucedida.")
                     
                     if rule.stop_on_trigger:
                         log.info(f"Regra '{rule.name}' tem 'stop_on_trigger' ativado. Parando a avaliação de outras regras neste ciclo.")

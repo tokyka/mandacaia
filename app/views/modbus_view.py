@@ -60,8 +60,29 @@ def atualiza_modbus(id):
         slave.slave_id = form.slave_id.data
         slave.type = form.type.data
         slave.ativo = form.ativo.data
+
+        from ..models.motobomba_model import Motobomba
+        from ..models.modbus_action_model import ModbusAction
         
-        ModbusRegister.query.filter_by(device_id=slave.id).delete()
+        # Get IDs of registers to be deleted
+        register_ids_to_delete = [reg.id for reg in ModbusRegister.query.filter_by(device_id=slave.id).with_entities(ModbusRegister.id)]
+
+        if register_ids_to_delete:
+            # Delete dependent ModbusActions
+            ModbusAction.query.filter(
+                ModbusAction.target_register_id.in_(register_ids_to_delete)
+            ).delete(synchronize_session=False)
+
+            # Unlink motobombas from these registers
+            Motobomba.query.filter(
+                Motobomba.actuator_register_id.in_(register_ids_to_delete)
+            ).update(
+                {Motobomba.actuator_register_id: None},
+                synchronize_session=False
+            )
+
+            # Now it's safe to delete the registers
+            ModbusRegister.query.filter_by(device_id=slave.id).delete(synchronize_session=False)
         
         registradores_data = request.form.get('registradores_json')
         if registradores_data:

@@ -75,13 +75,19 @@ def criar_regra():
     
     # Popula choices dinamicamente
     condition_choices = _get_dynamic_choices()
+    
+    # Fetch writable registers for action target choices
+    writable_registers = ModbusRegister.query.join(ModbusDevice).filter(
+        ModbusRegister.rw == 'W'
+    ).order_by(ModbusDevice.device_name, ModbusRegister.name).all()
+    register_choices = [(r.id, f"{r.device.device_name} - {r.name} (End: {r.address})") for r in writable_registers]
+    register_choices.insert(0, ('', 'Selecione um Registrador Alvo')) # Add a default empty choice
+
     for cond_form in form.conditions:
         cond_form.variavel.choices = condition_choices
-
-    motobombas = Motobomba.query.all()
-    motobomba_choices = [(mb.id, mb.nome) for mb in motobombas]
+    
     for acao_form in form.actions:
-        acao_form.registrador_alvo.choices = motobomba_choices
+        acao_form.registrador_alvo.choices = register_choices
 
     if form.validate_on_submit():
         errors = []
@@ -195,7 +201,7 @@ def criar_regra():
             db.session.rollback()
             flash(f'Erro ao criar a regra: {e}', 'danger')
 
-    return render_template('editor_regras.html', form=form, title='Criar Nova Regra', action_url=url_for('criar_regra'), condition_choices=condition_choices)
+    return render_template('editor_regras.html', form=form, title='Criar Nova Regra', action_url=url_for('criar_regra'), condition_choices=condition_choices, register_choices=register_choices)
 
 
 @app.route('/regras_modbus/editar/<int:regra_id>', methods=['GET', 'POST'])
@@ -205,19 +211,23 @@ def editar_regra(regra_id):
 
     # Popula choices dinamicamente
     condition_choices = _get_dynamic_choices()
-    motobombas = Motobomba.query.all()
-    motobomba_choices = [(mb.id, mb.nome) for mb in motobombas]
+    # Popula choices dinamicamente
+    condition_choices = _get_dynamic_choices()
+    
+    # Fetch writable registers for action target choices
+    writable_registers = ModbusRegister.query.join(ModbusDevice).filter(
+        ModbusRegister.rw == 'W'
+    ).order_by(ModbusDevice.device_name, ModbusRegister.name).all()
+    register_choices = [(r.id, f"{r.device.device_name} - {r.name} (End: {r.address})") for r in writable_registers]
+    register_choices.insert(0, ('', 'Selecione um Registrador Alvo')) # Add a default empty choice
+    app.logger.info(f"Register Choices for Action Form (editar_regra): {register_choices}") # Add this log
 
     for cond_form in form.conditions:
         cond_form.variavel.choices = condition_choices
-    for acao_form in form.actions:
-        acao_form.registrador_alvo.choices = motobomba_choices
-    motobombas = Motobomba.query.all()
-    motobomba_choices = [(mb.id, mb.nome) for mb in motobombas]
-
+    
     # Set choices for each existing acao_form in the FieldList
     for acao_form in form.actions:
-        acao_form.registrador_alvo.choices = motobomba_choices
+        acao_form.registrador_alvo.choices = register_choices
 
     if form.validate_on_submit():
         try:
@@ -322,7 +332,7 @@ def editar_regra(regra_id):
         for cond_form in form.conditions:
             cond_form.variavel.choices = condition_choices
         for acao_form in form.actions:
-            acao_form.registrador_alvo.choices = motobomba_choices
+            acao_form.registrador_alvo.choices = register_choices
 
         # Popula condições existentes
         while len(form.conditions.entries) > 0:
@@ -339,7 +349,7 @@ def editar_regra(regra_id):
             form.actions.pop_entry()
         for acao_obj in regra.actions:
             acao_form = form.actions.append_entry()
-            acao_form.registrador_alvo.choices = motobomba_choices
+            acao_form.registrador_alvo.choices = register_choices # <--- Changed from motobomba_choices
             acao_form.tipo_acao.data = acao_obj.name
             acao_form.valor.data = str(acao_obj.write_value) if acao_obj.write_value is not None else ''
             if acao_obj.name in ['Ligar_Motobomba', 'Desligar_Motobomba']:
@@ -349,7 +359,7 @@ def editar_regra(regra_id):
                 if register:
                     acao_form.registrador_alvo_texto.data = register.name
 
-    return render_template('editor_regras.html', form=form, title='Editar Regra', regra=regra, action_url=url_for('editar_regra', regra_id=regra.id), condition_choices=condition_choices)
+    return render_template('editor_regras.html', form=form, title='Editar Regra', regra=regra, action_url=url_for('editar_regra', regra_id=regra.id), condition_choices=condition_choices, register_choices=register_choices)
 
 
 @app.route('/regras_modbus/remover/<int:regra_id>', methods=['POST'])

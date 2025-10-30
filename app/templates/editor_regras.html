@@ -159,6 +159,8 @@
 <script>
 // Passa as choices de condição do backend para o JavaScript
 const conditionChoices = {{ condition_choices|tojson }};
+// Passa as choices de registradores para o JavaScript
+const registerChoices = {{ register_choices|tojson }};
 
 document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('add-condition').addEventListener('click', function() {
@@ -213,6 +215,16 @@ function addField(prefix) {
                 option.value = choice[0];
                 option.textContent = choice[1];
                 selectVariavel.appendChild(option);
+            });
+        }
+    } else if (prefix === 'actions') { // Adiciona lógica para ações
+        const selectRegistradorAlvo = newField.querySelector('select[name*="registrador_alvo"]');
+        if (selectRegistradorAlvo) {
+            registerChoices.forEach(choice => {
+                const option = document.createElement('option');
+                option.value = choice[0];
+                option.textContent = choice[1];
+                selectRegistradorAlvo.appendChild(option);
             });
         }
     }
