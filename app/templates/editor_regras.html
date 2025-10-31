@@ -132,7 +132,29 @@
                         <button type="button" class="btn btn-primary btn-add" id="add-action">+</button>
                     </div>
                     {% for acao_form in form.actions %}
-                        {{ render_dynamic_field(acao_form, 'actions', loop.index0) }}
+                    <div class="form-section dynamic-form-item" data-index="{{ loop.index0 }}">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">{{ acao_form.tipo_acao.label }}</label>
+                                {{ acao_form.tipo_acao(class="form-select action-type-select") }}
+                            </div>
+                            <div class="col-md-4 mb-3 action-target" id="motobomba-target-{{ loop.index0 }}" style="display: none;">
+                                <label class="form-label">{{ acao_form.motobomba_alvo.label }}</label>
+                                {{ acao_form.motobomba_alvo(class="form-select") }}
+                            </div>
+                            <div class="col-md-4 mb-3 action-target" id="register-target-{{ loop.index0 }}" style="display: none;">
+                                <label class="form-label">{{ acao_form.registrador_alvo.label }}</label>
+                                {{ acao_form.registrador_alvo(class="form-select") }}
+                            </div>
+                            <div class="col-md-3 mb-3 action-value" id="action-value-{{ loop.index0 }}" style="display: none;">
+                                <label class="form-label">{{ acao_form.valor.label }}</label>
+                                {{ acao_form.valor(class="form-control") }}
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end mb-3">
+                                <button type="button" class="btn btn-remove" onclick="removeField(this, 'actions')">-</button>
+                            </div>
+                        </div>
+                    </div>
                     {% endfor %}
                 </div>
 
@@ -152,15 +174,37 @@
 </div>
 <div id="action-template" style="display: none;">
     {% set acao_form = form.actions.append_entry().form %}
-    {{ render_dynamic_field(acao_form, 'actions', '__prefix__') }}
+    <div class="form-section dynamic-form-item" data-index="__prefix__">
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <label class="form-label">{{ acao_form.tipo_acao.label }}</label>
+                {{ acao_form.tipo_acao(class="form-select action-type-select") }}
+            </div>
+            <div class="col-md-4 mb-3 action-target" id="motobomba-target-__prefix__" style="display: none;">
+                <label class="form-label">{{ acao_form.motobomba_alvo.label }}</label>
+                {{ acao_form.motobomba_alvo(class="form-select") }}
+            </div>
+            <div class="col-md-4 mb-3 action-target" id="register-target-__prefix__" style="display: none;">
+                <label class="form-label">{{ acao_form.registrador_alvo.label }}</label>
+                {{ acao_form.registrador_alvo(class="form-select") }}
+            </div>
+            <div class="col-md-3 mb-3 action-value" id="action-value-__prefix__" style="display: none;">
+                <label class="form-label">{{ acao_form.valor.label }}</label>
+                {{ acao_form.valor(class="form-control") }}
+            </div>
+            <div class="col-md-2 d-flex align-items-end mb-3">
+                <button type="button" class="btn btn-remove" onclick="removeField(this, 'actions')">-</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 
 <script>
-// Passa as choices de condição do backend para o JavaScript
+// Passa as choices do backend para o JavaScript
 const conditionChoices = {{ condition_choices|tojson }};
-// Passa as choices de registradores para o JavaScript
 const registerChoices = {{ register_choices|tojson }};
+const motobombaChoices = {{ motobomba_choices|tojson }};
 
 document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('add-condition').addEventListener('click', function() {
@@ -171,29 +215,55 @@ document.addEventListener('DOMContentLoaded', function () {
         addField('actions');
     });
 
-    // Initialize visibility for existing fields on page load
-    document.querySelectorAll('.dynamic-form-item').forEach(item => {
-        const tipoAcao = item.querySelector('select[name*="tipo_acao"]');
-        if (tipoAcao) {
-            toggleAlvoFields(tipoAcao);
+    // Initialize visibility for existing action fields on page load
+    document.querySelectorAll('.dynamic-form-item[data-index]').forEach(item => {
+        const actionSelect = item.querySelector('.action-type-select');
+        if (actionSelect) {
+            toggleActionFields({ target: actionSelect });
+            actionSelect.addEventListener('change', toggleActionFields);
         }
     });
 });
 
-function toggleAlvoFields(selectElement) {
+function toggleActionFields(event) {
+    const selectElement = event.target;
     const selectedValue = selectElement.value;
-    const formRow = selectElement.closest('.row');
-    const alvoSelect = formRow.querySelector('select[name*="registrador_alvo"]');
-    const alvoTextInput = formRow.querySelector('input[name*="registrador_alvo_texto"]');
+    const item = selectElement.closest('.dynamic-form-item');
+    const index = item.dataset.index;
 
+    const motobombaTarget = item.querySelector(`#motobomba-target-${index}`);
+    const registerTarget = item.querySelector(`#register-target-${index}`);
+    const actionValueDiv = item.querySelector(`#action-value-${index}`);
+    const actionValueInput = actionValueDiv ? actionValueDiv.querySelector('input') : null;
+
+    // Hide all conditional fields first
+    if (motobombaTarget) motobombaTarget.style.display = 'none';
+    if (registerTarget) registerTarget.style.display = 'none';
+    if (actionValueDiv) actionValueDiv.style.display = 'none';
+    if (actionValueInput) {
+        actionValueInput.readOnly = false;
+        if (event.type === 'change') {
+            actionValueInput.value = ''; // Clear value only on actual change
+        }
+    }
+
+    // Show fields based on selection
     if (selectedValue === 'Ligar_Motobomba' || selectedValue === 'Desligar_Motobomba') {
-        alvoSelect.style.display = 'block';
-        alvoTextInput.style.display = 'none';
-    } else {
-        alvoSelect.style.display = 'none';
-        alvoTextInput.style.display = 'block';
+        if (motobombaTarget) motobombaTarget.style.display = 'block';
+        if (actionValueDiv) actionValueDiv.style.display = 'block';
+        if (actionValueInput) {
+            actionValueInput.value = (selectedValue === 'Ligar_Motobomba') ? '1.0' : '0.0';
+            actionValueInput.readOnly = true;
+        }
+    } else if (selectedValue === 'Escrever_em_Registrador') {
+        if (registerTarget) registerTarget.style.display = 'block';
+        if (actionValueDiv) actionValueDiv.style.display = 'block';
+        if (actionValueInput) {
+            actionValueInput.readOnly = false;
+        }
     }
 }
+
 
 function addField(prefix) {
     const container = document.getElementById(prefix + '-container');
@@ -206,7 +276,6 @@ function addField(prefix) {
     tempDiv.innerHTML = newFieldHTML;
     const newField = tempDiv.firstElementChild;
 
-    // Se for um campo de condição, popula o select de variáveis
     if (prefix === 'conditions') {
         const selectVariavel = newField.querySelector('select[name*="variavel"]');
         if (selectVariavel) {
@@ -217,37 +286,62 @@ function addField(prefix) {
                 selectVariavel.appendChild(option);
             });
         }
-    } else if (prefix === 'actions') { // Adiciona lógica para ações
-        const selectRegistradorAlvo = newField.querySelector('select[name*="registrador_alvo"]');
-        if (selectRegistradorAlvo) {
-            registerChoices.forEach(choice => {
-                const option = document.createElement('option');
-                option.value = choice[0];
-                option.textContent = choice[1];
-                selectRegistradorAlvo.appendChild(option);
+    } else if (prefix === 'actions') {
+        // Populate action dropdowns
+        const selectMotobomba = newField.querySelector('select[name*="motobomba_alvo"]');
+        if (selectMotobomba) {
+            motobombaChoices.forEach(choice => {
+                const option = newOption(choice[0], choice[1]);
+                selectMotobomba.appendChild(option);
             });
+        }
+
+        const selectRegistrador = newField.querySelector('select[name*="registrador_alvo"]');
+        if (selectRegistrador) {
+            registerChoices.forEach(choice => {
+                const option = newOption(choice[0], choice[1]);
+                selectRegistrador.appendChild(option);
+            });
+        }
+        
+        const actionSelect = newField.querySelector('.action-type-select');
+        if (actionSelect) {
+            // Manually copy choices for the main action dropdown
+            const sourceSelect = document.querySelector('.action-type-select');
+            if(sourceSelect) {
+                actionSelect.innerHTML = sourceSelect.innerHTML;
+            }
+            actionSelect.addEventListener('change', toggleActionFields);
+            toggleActionFields({ target: actionSelect });
         }
     }
 
     container.appendChild(newField);
+}
 
-    const tipoAcao = newField.querySelector('select[name*="tipo_acao"]');
-    if (tipoAcao) {
-        toggleAlvoFields(tipoAcao);
-    }
+function newOption(value, text) {
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = text;
+    return option;
 }
 
 function removeField(button, prefix) {
     const item = button.closest('.dynamic-form-item');
     item.remove();
-    // Re-index fields after removal if necessary
+    // Re-index fields after removal
     const container = document.getElementById(prefix + '-container');
     const items = container.querySelectorAll('.dynamic-form-item');
     items.forEach((item, index) => {
+        item.dataset.index = index;
         item.querySelectorAll('input, select').forEach(input => {
             const name = input.name.replace(/-(\d+)-/, `-${index}-`);
             input.name = name;
             input.id = name;
+        });
+        item.querySelectorAll('.action-target, .action-value').forEach(div => {
+            const id = div.id.replace(/_(\d+)$/, `_${index}`);
+            div.id = id;
         });
     });
 }

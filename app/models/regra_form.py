@@ -20,12 +20,13 @@ class AcaoForm(FlaskForm):
     tipo_acao = SelectField('Ação', choices=[
         ('Ligar_Motobomba', 'Ligar Motobomba'),
         ('Desligar_Motobomba', 'Desligar Motobomba'),
+        ('Escrever_em_Registrador', 'Escrever em Registrador'),
         ('Salvar_Historico', 'Salvar no Histórico'),
         ('Notificar_Email', 'Notificar por E-mail')
-        # Adicione outras ações conforme necessário
     ], validators=[DataRequired()])
-    registrador_alvo = SelectField('Alvo (opcional)', validators=[Optional()])
-    valor = StringField('Valor (opcional)', validators=[Length(max=100)])
+    motobomba_alvo = SelectField('Motobomba Alvo', validators=[Optional()])
+    registrador_alvo = SelectField('Registrador Alvo', validators=[Optional()])
+    valor = StringField('Valor para Escrita', validators=[Optional(), Length(max=100)])
 
 class RegraForm(FlaskForm):
     """Formulário principal para criar/editar uma regra."""
@@ -33,7 +34,7 @@ class RegraForm(FlaskForm):
     description = StringField('Descrição', validators=[Length(max=255)])
     enabled = BooleanField('Habilitada', default=True)
 
-    conditions = FieldList(FormField(CondicaoForm), min_entries=1)
-    actions = FieldList(FormField(AcaoForm), min_entries=1)
+    conditions = FieldList(FormField(CondicaoForm), min_entries=0)
+    actions = FieldList(FormField(AcaoForm), min_entries=0)
 
     submit = SubmitField('Salvar Regra')
