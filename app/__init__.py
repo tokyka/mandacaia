@@ -27,6 +27,7 @@ from app.models.modbus_rule_model import ModbusRule
 from app.models.modbus_condition_model import ModbusCondition
 from app.models.modbus_action_model import ModbusAction
 from app.models.modbus_rule_log_model import ModbusRuleLog
+from app.models.modbus_master_config_model import ModbusMasterConfig
 from .views import login_view, acionamentos_view, reservatorio_view, motobomba_view, usuarios_view, nivel_view, index_view, monitoramento_view, modbus_view, grupo_bombeamento_view, database_view, regra_view
 
 # Configuração de logging

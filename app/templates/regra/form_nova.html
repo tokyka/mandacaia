@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+<div class="container mt-4">
+  <h2>{{ editar|default(False) and 'Editar Regra' or 'Criar Regra' }}</h2>
+  <form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="mb-3">{{ form.name.label }} {{ form.name(class="form-control") }}</div>
+    <div class="mb-3">{{ form.description.label }} {{ form.description(class="form-control") }}</div>
+    <div class="form-check mb-3">{{ form.enabled() }} {{ form.enabled.label }}</div>
+
+    <h4>Condições</h4>
+    <div id="condicoes">
+      {% for cond in form.conditions %}
+        <div class="border p-3 mb-2 condicao-block">
+          <select name="conditions-{{ loop.index0 }}-variavel" class="form-select variavel"></select>
+          <select name="conditions-{{ loop.index0 }}-operador" class="form-select">
+            <option value="==">Igual a</option>
+            <option value="!=">Diferente de</option>
+            <option value=">">Maior que</option>
+            <option value="<">Menor que</option>
+            <option value=">=">Maior ou igual a</option>
+            <option value="<=">Menor ou igual a</option>
+          </select>
+          <input type="text" name="conditions-{{ loop.index0 }}-valor" class="form-control mt-2" placeholder="Valor">
+        </div>
+      {% endfor %}
+    </div>
+    <button type="button" class="btn btn-outline-primary" onclick="addCondicao()">+ Adicionar Condição</button>
+
+    <h4 class="mt-4">Ações</h4>
+    <div id="acoes">
+      {% for acao in form.actions %}
+        <div class="border p-3 mb-2 acao-block">
+          <select name="actions-{{ loop.index0 }}-tipo_acao" class="form-select">
+            <option value="Ligar_Motobomba">Ligar Motobomba</option>
+            <option value="Desligar_Motobomba">Desligar Motobomba</option>
+            <option value="Escrever_em_Registrador">Escrever em Registrador</option>
+            <option value="Salvar_Historico">Salvar no Histórico</option>
+            <option value="Notificar_Email">Notificar por E-mail</option>
+          </select>
+          <select name="actions-{{ loop.index0 }}-motobomba_alvo" class="form-select motobomba"></select>
+          <select name="actions-{{ loop.index0 }}-registrador_alvo" class="form-select registrador"></select>
+          <input type="text" name="actions-{{ loop.index0 }}-valor" class="form-control mt-2" placeholder="Valor para Escrita">
+        </div>
+      {% endfor %}
+    </div>
+    <button type="button" class="btn btn-outline-primary" onclick="addAcao()">+ Adicionar Ação</button>
+
+    <button type="submit" class="btn btn-success mt-3">{{ form.submit.label }}</button>
+  </form>
+</div>
+
+<script>
+let condIndex = {{ form.conditions|length }};
+let acaoIndex = {{ form.actions|length }};
+
+async function fetchOptions(endpoint) {
+  const res = await fetch(endpoint);
+  return res.ok ? await res.json() : [];
+}
+
+async function addCondicao() {
+  const container = document.getElementById('condicoes');
+  const block = document.createElement('div');
+  block.className = 'border p-3 mb-2 condicao-block';
+
+  const variavelSelect = document.createElement('select');
+  variavelSelect.name = `conditions-${condIndex}-variavel`;
+  variavelSelect.className = 'form-select variavel';
+
+  const operadores = ['==', '!=', '>', '<', '>=', '<='];
+  const operadorSelect = document.createElement('select');
+  operadorSelect.name = `conditions-${condIndex}-operador`;
+  operadorSelect.className = 'form-select';
+  operadores.forEach(op => {
+    const opt = document.createElement('option');
+    opt.value = op;
+    opt.textContent = op;
+    operadorSelect.appendChild(opt);
+  });
+
+  const valorInput = document.createElement('input');
+  valorInput.type = 'text';
+  valorInput.name = `conditions-${condIndex}-valor`;
+  valorInput.className = 'form-control mt-2';
+  valorInput.placeholder = 'Valor';
+
+  block.appendChild(variavelSelect);
+  block.appendChild(operadorSelect);
+  block.appendChild(valorInput);
+  container.appendChild(block);
+
+  const options = await fetchOptions('/modbus_regras/api/opcoes_variavel');
+  options.forEach(opt => {
+    const o = document.createElement('option');
+    o.value = opt.id;
+    o.textContent = opt.label;
+    variavelSelect.appendChild(o);
+  });
+
+  condIndex++;
+}
+
+async function addAcao() {
+  const container = document.getElementById('acoes');
+  const block = document.createElement('div');
+  block.className = 'border p-3 mb-2 acao-block';
+
+  const tipoSelect = document.createElement('select');
+  tipoSelect.name = `actions-${acaoIndex}-tipo_acao`;
+  tipoSelect.className = 'form-select';
+  ['Ligar_Motobomba', 'Desligar_Motobomba', 'Escrever_em_Registrador', 'Salvar_Historico', 'Notificar_Email'].forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t;
+    opt.textContent = t.replace(/_/g, ' ');
+    tipoSelect.appendChild(opt);
+  });
+
+  const motobombaSelect = document.createElement('select');
+  motobombaSelect.name = `actions-${acaoIndex}-motobomba_alvo`;
+  motobombaSelect.className = 'form-select motobomba';
+
+  const registradorSelect = document.createElement('select');
+  registradorSelect.name = `actions-${acaoIndex}-registrador_alvo`;
+  registradorSelect.className = 'form-select registrador';
+
+  const valorInput = document.createElement('input');
+  valorInput.type = 'text';
+  valorInput.name = `actions-${acaoIndex}-valor`;
+  valorInput.className = 'form-control mt-2';
+  valorInput.placeholder = 'Valor para Escrita';
+
+  block.appendChild(tipoSelect);
+  block.appendChild(motobombaSelect);
+  block.appendChild(registradorSelect);
+  block.appendChild(valorInput);
+  container.appendChild(block);
+
+  const motobombas = await fetchOptions('/modbus_regras/api/opcoes_motobomba');
+  motobombas.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m.id;
+    opt.textContent = m.nome;
+    motobombaSelect.appendChild(opt);
+  });
+
+  const registradores = await fetchOptions('/modbus_regras/api/opcoes_registrador');
+  registradores.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value = r.id;
+    opt.textContent = r.name;
+    registradorSelect.appendChild(opt);
+  });
+
+  acaoIndex++;
+}
+</script>
+{% endblock conteudo %}

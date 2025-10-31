@@ -4,7 +4,7 @@ from wtforms.validators import DataRequired, Length, Optional
 
 class CondicaoForm(FlaskForm):
     """Sub-formulário para uma condição."""
-    variavel = SelectField('Variável', validators=[DataRequired()])
+    variavel = SelectField('Variável', coerce=int, validators=[DataRequired()])
     operador = SelectField('Operador', choices=[
         ('==', 'Igual a'),
         ('!=', 'Diferente de'),

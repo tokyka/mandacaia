@@ -1,3 +1,3 @@
 #!/bin/bash
 
-flask run -p 9000
+/home/carlos/python/mandacaia/.venv/bin/flask run -p 9000

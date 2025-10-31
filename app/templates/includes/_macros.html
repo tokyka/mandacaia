@@ -3,7 +3,11 @@
     <div class="row">
         <div class="col-md-4 mb-3">
             <label class="form-label">{{ field.variavel.label if 'conditions' in prefix else field.tipo_acao.label }}</label>
-            {{ field.variavel(class="form-select") if 'conditions' in prefix else field.tipo_acao(class="form-select", onchange="toggleAlvoFields(this)") }}
+        {% if 'conditions' in prefix %}
+            {{ field.variavel(class="form-select") }}
+        {% else %}
+            {{ field.tipo_acao(class="form-select", onchange="toggleAlvoFields(this)") }}
+        {% endif %}
         </div>
         {% if 'conditions' in prefix %}
         <div class="col-md-3 mb-3">

@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% block conteudo %}
+<div class="container mt-4">
+  <h2>Editar Regra</h2>
+  <form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="mb-3">{{ form.name.label }} {{ form.name(class="form-control") }}</div>
+    <div class="mb-3">{{ form.description.label }} {{ form.description(class="form-control") }}</div>
+    <div class="form-check mb-3">{{ form.enabled() }} {{ form.enabled.label }}</div>
+
+    <h4>Condições</h4>
+    <div id="condicoes">
+      {% for cond in form.conditions %}
+        <div class="border p-3 mb-2 condicao-block">
+          <label>{{ cond.variavel.label }}</label>
+          <select name="conditions-{{ loop.index0 }}-variavel" class="form-select" data-selected="{{ cond.variavel.data }}"></select>
+
+          <label>{{ cond.operador.label }}</label>
+          {{ cond.operador(class="form-select") }}
+
+          <label>{{ cond.valor.label }}</label>
+          {{ cond.valor(class="form-control") }}
+        </div>
+      {% endfor %}
+    </div>
+
+    <h4 class="mt-4">Ações</h4>
+    <div id="acoes">
+      {% for acao in form.actions %}
+        <div class="border p-3 mb-2 acao-block">
+          <label>{{ acao.tipo_acao.label }}</label>
+          {{ acao.tipo_acao(class="form-select") }}
+
+          <label>{{ acao.motobomba_alvo.label }}</label>
+          <select name="actions-{{ loop.index0 }}-motobomba_alvo" class="form-select" data-selected="{{ acao.motobomba_alvo.data }}"></select>
+
+          <label>{{ acao.registrador_alvo.label }}</label>
+          <select name="actions-{{ loop.index0 }}-registrador_alvo" class="form-select" data-selected="{{ acao.registrador_alvo.data }}"></select>
+
+          <label>{{ acao.valor.label }}</label>
+          {{ acao.valor(class="form-control") }}
+        </div>
+      {% endfor %}
+    </div>
+
+    <button type="submit" class="btn btn-success mt-3">{{ form.submit.label }}</button>
+  </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  // Preencher selects de condições
+  const condicoes = document.querySelectorAll('.condicao-block');
+  const variavelOptions = await fetch('/modbus_regras/api/opcoes_variavel').then(r => r.json());
+
+  condicoes.forEach((block) => {
+    const select = block.querySelector('select[name$="-variavel"]');
+    const selectedValue = select.getAttribute('data-selected');
+    select.innerHTML = '';
+    variavelOptions.forEach(opt => {
+      const o = document.createElement('option');
+      o.value = `${opt.id}-${opt.tipo}`;
+      o.textContent = opt.label;
+      if (o.value === selectedValue) o.selected = true;
+      select.appendChild(o);
+    });
+  });
+
+  // Preencher selects de ações
+  const acoes = document.querySelectorAll('.acao-block');
+  const motobombaOptions = await fetch('/modbus_regras/api/opcoes_motobomba').then(r => r.json());
+  const registradorOptions = await fetch('/modbus_regras/api/opcoes_registrador').then(r => r.json());
+
+  acoes.forEach((block) => {
+    const motobombaSelect = block.querySelector('select[name$="-motobomba_alvo"]');
+    const registradorSelect = block.querySelector('select[name$="-registrador_alvo"]');
+
+    const motobombaValue = motobombaSelect.getAttribute('data-selected');
+    const registradorValue = registradorSelect.getAttribute('data-selected');
+
+    motobombaSelect.innerHTML = '';
+    motobombaOptions.forEach(opt => {
+      const o = document.createElement('option');
+      o.value = opt.id;
+      o.textContent = opt.nome;
+      if (o.value === motobombaValue) o.selected = true;
+      motobombaSelect.appendChild(o);
+    });
+
+    registradorSelect.innerHTML = '';
+    registradorOptions.forEach(opt => {
+      const o = document.createElement('option');
+      o.value = opt.id;
+      o.textContent = opt.name;
+      if (o.value === registradorValue) o.selected = true;
+      registradorSelect.appendChild(o);
+    });
+  });
+});
+</script>
+{% endblock conteudo %}

@@ -96,3 +96,22 @@ Here's a debugging step that can help pinpoint the exact problematic column:
 ## Pendências
 
 *   **Flexibilizar Conexão do Master:** Atualmente, a porta serial (ex: `/tmp/ttyS1`) do script do master (`modbus_rtu_master_v4.py`) está fixa no código. O ideal é que essa configuração seja lida do banco de dados, permitindo que a porta de comunicação seja definida por dispositivo, o que tornaria o sistema mais flexível para diferentes topologias de rede.
+
+*   **Refatoração da Gestão de Regras (regra_view.py):**
+    Para tornar a gestão de regras mais robusta e menos propensa a erros de persistência de dados, será implementado o seguinte plano de refatoração:
+
+    1.  **Modificar `_get_dynamic_choices()` (app/views/regra_view.py):**
+        *   **Feito:** A função agora consulta diretamente `ModbusRegister` para obter o `register.id` real para cada variável e retorna `(register.id, 'String legível por humanos')`. Isso garante que as opções do combobox sejam únicas e baseadas nos IDs dos registradores.
+
+    2.  **Modificar `CondicaoForm.variavel` (app/models/regra_form.py):**
+        *   **A Fazer:** Alterar `variavel = SelectField('Variável', validators=[DataRequired()])` para `variavel = SelectField('Variável', coerce=int, validators=[DataRequired()])`. Isso garantirá que o valor selecionado seja tratado como um inteiro (o `register_id`).
+
+    3.  **Modificar `get_variable_string_from_register_id()` (app/views/regra_view.py):**
+        *   **A Fazer:** Esta função não será mais necessária em sua forma atual para preencher o *valor* do campo `variavel` no formulário. Ela pode ser adaptada para exibir uma string legível por humanos a partir de um `register_id`, se necessário para outros propósitos de exibição.
+
+    4.  **Modificar `create_rule` e `edit_rule` (parte GET em app/views/regra_view.py):**
+        *   **A Fazer:** Ao popular `condicao_data`, o campo `variavel` deve ser definido como `condicao_obj.left_register_id` diretamente.
+        *   As `condicao_form.variavel.choices` devem ser definidas como as `condition_choices` geradas pelo `_get_dynamic_choices()` modificado.
+
+    5.  **Modificar `create_rule` e `edit_rule` (parte POST em app/views/regra_view.py):**
+        *   **A Fazer:** O `target_register_id` para uma condição será simplesmente `condicao_form.variavel.data`. Nenhuma análise complexa de string será necessária, tornando a lógica de salvamento mais direta e robusta.

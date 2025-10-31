@@ -12,6 +12,26 @@ from app.models.modbus_rule_model import ModbusRule
 from app.models.modbus_condition_model import ModbusCondition
 from app.models.modbus_action_model import ModbusAction
 from app.models.modbus_device_register_model import ModbusRegister
+from app import create_app, db
+from app.models.modbus_master_config_model import ModbusMasterConfig
+
+app = create_app()
+app.app_context().push()
+
+# Configurações da comunicação Modbus RTU
+master_config = ModbusMasterConfig.query.first()
+if not master_config:
+    # Se não houver configuração no banco, cria uma com valores padrão
+    master_config = ModbusMasterConfig()
+    db.session.add(master_config)
+    db.session.commit()
+
+PORT = master_config.port
+BAUDRATE = master_config.baudrate
+PARITY = master_config.parity
+STOPBITS = master_config.stopbits
+BYTESIZE = master_config.bytesize
+TIMEOUT = master_config.timeout
 
 # --- Configuração do Logging ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
